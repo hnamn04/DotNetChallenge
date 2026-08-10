@@ -468,3 +468,12 @@ VALUES
     'Product sold',
     NOW()
 );
+
+SELECT * FROM users;
+SELECT * FROM roles;
+SELECT * FROM products;
+SELECT * FROM inventory;
+SELECT * FROM purchase_orders;
+SELECT * FROM sales_orders;
+SELECT * FROM payments;
+SELECT * FROM stock_transactions;
