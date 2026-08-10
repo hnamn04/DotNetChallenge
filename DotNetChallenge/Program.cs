@@ -1,5 +1,7 @@
 using DotNetChallenge.Data;
 using Microsoft.EntityFrameworkCore;
+using FluentValidation;
+using FluentValidation.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,6 +17,9 @@ builder.Services.AddDbContext<AppDbContext>(options =>
             builder.Configuration.GetConnectionString("DefaultConnection")
         )
         .UseSnakeCaseNamingConvention());
+
+builder.Services.AddFluentValidationAutoValidation();
+builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
 var app = builder.Build();
 
