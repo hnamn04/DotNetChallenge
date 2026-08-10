@@ -1,0 +1,6 @@
+@DotNetChallenge_HostAddress = http://localhost:5268
+
+GET {{DotNetChallenge_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
