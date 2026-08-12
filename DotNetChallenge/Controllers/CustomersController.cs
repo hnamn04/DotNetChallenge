@@ -1,9 +1,6 @@
-﻿using DotNetChallenge.Data;
-using DotNetChallenge.DTOs.Customers;
-using DotNetChallenge.Models;
-using DotNetChallenge.Models.Entities;
+﻿using DotNetChallenge.DTOs.Customers;
+using DotNetChallenge.Services.Customers;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace DotNetChallenge.Controllers
 {
@@ -14,11 +11,11 @@ namespace DotNetChallenge.Controllers
     [Route("api/customers")]
     public class CustomersController : ControllerBase
     {
-        private readonly AppDbContext _context;
+        private readonly ICustomerService _customerService;
 
-        public CustomersController(AppDbContext context)
+        public CustomersController(ICustomerService customerService)
         {
-            _context = context;
+            _customerService = customerService;
         }
 
         // GET: /api/customers
@@ -31,20 +28,7 @@ namespace DotNetChallenge.Controllers
         [ProducesResponseType(typeof(IEnumerable<CustomerResponse>), StatusCodes.Status200OK)]
         public async Task<ActionResult<IEnumerable<CustomerResponse>>> GetCustomers()
         {
-            var customers = await _context.Customers
-                .AsNoTracking()
-                .OrderBy(x => x.Name)
-                .Select(x => new CustomerResponse
-                {
-                    Id = x.Id,
-                    Name = x.Name,
-                    Email = x.Email,
-                    Phone = x.Phone,
-                    Address = x.Address,
-                    CreatedAt = x.CreatedAt,
-                    UpdatedAt = x.UpdatedAt
-                })
-                .ToListAsync();
+            var customers = await _customerService.GetAllAsync();
 
             return Ok(customers);
         }
@@ -61,20 +45,7 @@ namespace DotNetChallenge.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<CustomerResponse>> GetCustomerById(Guid id)
         {
-            var customer = await _context.Customers
-                .AsNoTracking()
-                .Where(x => x.Id == id)
-                .Select(x => new CustomerResponse
-                {
-                    Id = x.Id,
-                    Name = x.Name,
-                    Email = x.Email,
-                    Phone = x.Phone,
-                    Address = x.Address,
-                    CreatedAt = x.CreatedAt,
-                    UpdatedAt = x.UpdatedAt
-                })
-                .FirstOrDefaultAsync();
+            var customer = await _customerService.GetByIdAsync(id);
 
             if (customer is null)
             {
@@ -101,56 +72,12 @@ namespace DotNetChallenge.Controllers
         [ProducesResponseType(StatusCodes.Status409Conflict)]
         public async Task<ActionResult<CustomerResponse>> CreateCustomer(CreateCustomerRequest request)
         {
-            var normalizedPhone = request.Phone?.Trim();
-
-            if (!string.IsNullOrWhiteSpace(normalizedPhone))
-            {
-                var phoneExists = await _context.Customers
-                    .AnyAsync(x => x.Phone == normalizedPhone);
-
-                if (phoneExists)
-                {
-                    return Conflict(new
-                    {
-                        message = "Customer phone already exists."
-                    });
-                }
-            }
-
-            var customer = new Customer
-            {
-                Id = Guid.NewGuid(),
-                Name = request.Name.Trim(),
-                Email = string.IsNullOrWhiteSpace(request.Email)
-                    ? null
-                    : request.Email.Trim(),
-                Phone = normalizedPhone,
-                Address = string.IsNullOrWhiteSpace(request.Address)
-                    ? null
-                    : request.Address.Trim(),
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = null
-            };
-
-            _context.Customers.Add(customer);
-
-            await _context.SaveChangesAsync();
-
-            var response = new CustomerResponse
-            {
-                Id = customer.Id,
-                Name = customer.Name,
-                Email = customer.Email,
-                Phone = customer.Phone,
-                Address = customer.Address,
-                CreatedAt = customer.CreatedAt,
-                UpdatedAt = customer.UpdatedAt
-            };
+            var customer = await _customerService.CreateAsync(request);
 
             return CreatedAtAction(
                 nameof(GetCustomerById),
                 new { id = customer.Id },
-                response);
+                customer);
         }
 
         // PUT: /api/customers/{id}
@@ -170,8 +97,9 @@ namespace DotNetChallenge.Controllers
         [ProducesResponseType(StatusCodes.Status409Conflict)]
         public async Task<ActionResult<CustomerResponse>> UpdateCustomer(Guid id, UpdateCustomerRequest request)
         {
-            var customer = await _context.Customers
-                .FirstOrDefaultAsync(x => x.Id == id);
+            var customer = await _customerService.UpdateAsync(
+                id,
+                request);
 
             if (customer is null)
             {
@@ -181,50 +109,7 @@ namespace DotNetChallenge.Controllers
                 });
             }
 
-            var normalizedPhone = request.Phone?.Trim();
-
-            if (!string.IsNullOrWhiteSpace(normalizedPhone))
-            {
-                var phoneExists = await _context.Customers
-                    .AnyAsync(x =>
-                        x.Phone == normalizedPhone &&
-                        x.Id != id);
-
-                if (phoneExists)
-                {
-                    return Conflict(new
-                    {
-                        message = "Customer phone already exists."
-                    });
-                }
-            }
-
-            customer.Name = request.Name.Trim();
-
-            customer.Email = string.IsNullOrWhiteSpace(request.Email)
-                ? null
-                : request.Email.Trim();
-
-            customer.Phone = normalizedPhone;
-
-            customer.Address = string.IsNullOrWhiteSpace(request.Address)
-                ? null
-                : request.Address.Trim();
-
-            customer.UpdatedAt = DateTime.UtcNow;
-
-            await _context.SaveChangesAsync();
-
-            return Ok(new CustomerResponse
-            {
-                Id = customer.Id,
-                Name = customer.Name,
-                Email = customer.Email,
-                Phone = customer.Phone,
-                Address = customer.Address,
-                CreatedAt = customer.CreatedAt,
-                UpdatedAt = customer.UpdatedAt
-            });
+            return Ok(customer);
         }
 
         // DELETE: /api/customers/{id}
@@ -241,10 +126,9 @@ namespace DotNetChallenge.Controllers
         [ProducesResponseType(StatusCodes.Status409Conflict)]
         public async Task<IActionResult> DeleteCustomer(Guid id)
         {
-            var customer = await _context.Customers
-                .FirstOrDefaultAsync(x => x.Id == id);
+            var result = await _customerService.DeleteAsync(id);
 
-            if (customer is null)
+            if (result == CustomerDeleteResult.NotFound)
             {
                 return NotFound(new
                 {
@@ -252,20 +136,13 @@ namespace DotNetChallenge.Controllers
                 });
             }
 
-            var hasOrders = await _context.SalesOrders
-                .AnyAsync(x => x.CustomerId == id);
-
-            if (hasOrders)
+            if (result == CustomerDeleteResult.HasOrders)
             {
                 return Conflict(new
                 {
                     message = "Cannot delete customer because the customer already has sales orders."
                 });
             }
-
-            _context.Customers.Remove(customer);
-
-            await _context.SaveChangesAsync();
 
             return NoContent();
         }
