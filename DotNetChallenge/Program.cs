@@ -2,6 +2,7 @@ using DotNetChallenge.Data;
 using DotNetChallenge.Middleware;
 using DotNetChallenge.Services.Categories;
 using DotNetChallenge.Services.Customers;
+using DotNetChallenge.Services.Products;
 using DotNetChallenge.Services.Suppliers;
 using DotNetChallenge.Services.Units;
 using FluentValidation;
@@ -19,6 +20,7 @@ builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<ISupplierService, SupplierService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IUnitService, UnitService>();
+builder.Services.AddScoped<IProductService, ProductService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
