@@ -28,7 +28,10 @@ namespace DotNetChallenge.Middleware
 
             var statusCode = exception switch
             {
-                DuplicatePhoneException =>
+                NotFoundException =>
+                    (int)HttpStatusCode.Conflict,
+
+                ConflictException =>
                     (int)HttpStatusCode.Conflict,
 
                 _ =>

@@ -22,13 +22,10 @@
 
         public Inventory? Inventory { get; set; }
 
-        public ICollection<PurchaseOrderItem> PurchaseOrderItems { get; set; }
-            = new List<PurchaseOrderItem>();
+        public ICollection<PurchaseOrderItem> PurchaseOrderItems { get; set; } = new List<PurchaseOrderItem>();
 
-        public ICollection<SalesOrderItem> SalesOrderItems { get; set; }
-            = new List<SalesOrderItem>();
+        public ICollection<SalesOrderItem> SalesOrderItems { get; set; } = new List<SalesOrderItem>();
 
-        public ICollection<StockTransaction> StockTransactions { get; set; }
-            = new List<StockTransaction>();
+        public ICollection<StockTransaction> StockTransactions { get; set; } = new List<StockTransaction>();
     }
 }

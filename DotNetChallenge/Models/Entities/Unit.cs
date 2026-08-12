@@ -6,7 +6,6 @@
 
         public string Symbol { get; set; } = null!;
 
-        public ICollection<Product> Products { get; set; }
-            = new List<Product>();
+        public ICollection<Product> Products { get; set; } = new List<Product>();
     }
 }

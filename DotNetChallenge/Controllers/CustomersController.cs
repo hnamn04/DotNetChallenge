@@ -126,23 +126,7 @@ namespace DotNetChallenge.Controllers
         [ProducesResponseType(StatusCodes.Status409Conflict)]
         public async Task<IActionResult> DeleteCustomer(Guid id)
         {
-            var result = await _customerService.DeleteAsync(id);
-
-            if (result == CustomerDeleteResult.NotFound)
-            {
-                return NotFound(new
-                {
-                    message = $"Customer with id '{id}' was not found."
-                });
-            }
-
-            if (result == CustomerDeleteResult.HasOrders)
-            {
-                return Conflict(new
-                {
-                    message = "Cannot delete customer because the customer already has sales orders."
-                });
-            }
+            await _customerService.DeleteAsync(id);
 
             return NoContent();
         }

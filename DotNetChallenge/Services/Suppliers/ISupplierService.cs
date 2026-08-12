@@ -12,6 +12,6 @@ namespace DotNetChallenge.Services.Suppliers
 
         Task<SupplierResponse?> UpdateAsync(Guid id, UpdateSupplierRequest request);
 
-        Task<SupplierDeleteResult> DeleteAsync(Guid id);
+        Task DeleteAsync(Guid id);
     }
 }

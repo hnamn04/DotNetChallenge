@@ -130,23 +130,7 @@ namespace DotNetChallenge.Controllers
         [ProducesResponseType(StatusCodes.Status409Conflict)]
         public async Task<IActionResult> DeleteSuppler(Guid id)
         {
-            var result = await _supplierService.DeleteAsync(id);
-
-            if (result == SupplierDeleteResult.NotFound)
-            {
-                return NotFound(new
-                {
-                    message = $"Supplier with id '{id}' was not found."
-                });
-            }
-
-            if (result == SupplierDeleteResult.HasOrders)
-            {
-                return Conflict(new
-                {
-                    message = "Cannot delete supplier because the supplier already has purchase orders."
-                });
-            }
+            await _supplierService.DeleteAsync(id);
 
             return NoContent();
         }
