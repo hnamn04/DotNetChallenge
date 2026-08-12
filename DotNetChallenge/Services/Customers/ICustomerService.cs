@@ -13,6 +13,6 @@ namespace DotNetChallenge.Services.Customers
 
         Task<CustomerResponse?> UpdateAsync(Guid id, UpdateCustomerRequest request);
 
-        Task<CustomerDeleteResult> DeleteAsync(Guid id);
+        Task DeleteAsync(Guid id);
     }
 }

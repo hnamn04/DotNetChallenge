@@ -122,35 +122,29 @@ namespace DotNetChallenge.Services.Customers
             return MapToResponse(customer);
         }
 
-        public async Task<CustomerDeleteResult> DeleteAsync(Guid id)
+        public async Task DeleteAsync(Guid id)
         {
             var customer = await _context.Customers
-                .Include(x => x.SalesOrders)
                 .FirstOrDefaultAsync(x => x.Id == id);
 
             if (customer is null)
             {
-                return CustomerDeleteResult.NotFound;
+                throw new NotFoundException(
+                    $"Customer with id '{id}' was not found.");
             }
 
-            if (customer.SalesOrders.Any())
+            var hasOrders = await _context.SalesOrders
+                .AnyAsync(x => x.CustomerId == id);
+
+            if (hasOrders)
             {
-                return CustomerDeleteResult.HasOrders;
+                throw new ConflictException(
+                    "Cannot delete customer because it has existing orders.");
             }
 
             _context.Customers.Remove(customer);
 
             await _context.SaveChangesAsync();
-
-            return CustomerDeleteResult.Deleted;
-        }
-
-        public async Task<bool> PhoneExistsAsync(string phone, Guid? excludeId = null)
-        {
-            return await _context.Customers
-                .AnyAsync(x =>
-                    x.Phone == phone &&
-                    (!excludeId.HasValue || x.Id != excludeId.Value));
         }
 
         private static CustomerResponse MapToResponse(Customer customer)

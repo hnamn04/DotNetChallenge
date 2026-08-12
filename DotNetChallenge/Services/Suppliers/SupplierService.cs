@@ -116,27 +116,27 @@ namespace DotNetChallenge.Services.Suppliers
             return MapToResponse(supplier);
         }
 
-        public async Task<SupplierDeleteResult> DeleteAsync(Guid id)
+        public async Task DeleteAsync(Guid id)
         {
             var supplier = await _context.Suppliers
-                .Include(x => x.PurchaseOrders)
                 .FirstOrDefaultAsync(x => x.Id == id);
 
             if (supplier is null)
             {
-                return SupplierDeleteResult.NotFound;
+                throw new NotFoundException($"Supplier with id '{id}' was not found.");
             }
 
-            if (supplier.PurchaseOrders.Any())
+            var hasOrders = await _context.PurchaseOrders
+                .AnyAsync(x => x.SupplierId == id);
+
+            if (hasOrders)
             {
-                return SupplierDeleteResult.HasOrders;
+                throw new ConflictException("Cannot delete supplier because it has existing orders.");
             }
 
             _context.Suppliers.Remove(supplier);
 
             await _context.SaveChangesAsync();
-
-            return SupplierDeleteResult.Deleted;
         }
 
         private static SupplierResponse MapToResponse(Supplier supplier)
