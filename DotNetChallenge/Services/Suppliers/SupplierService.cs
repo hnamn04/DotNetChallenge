@@ -139,14 +139,6 @@ namespace DotNetChallenge.Services.Suppliers
             return SupplierDeleteResult.Deleted;
         }
 
-        public async Task<bool> PhoneExistsAsync(string phone, Guid? excludeId = null)
-        {
-            return await _context.Suppliers
-                .AnyAsync(x =>
-                    x.Phone == phone &&
-                    (!excludeId.HasValue || x.Id != excludeId.Value));
-        }
-
         private static SupplierResponse MapToResponse(Supplier supplier)
         {
             return new SupplierResponse

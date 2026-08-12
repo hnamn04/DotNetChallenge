@@ -1,9 +1,9 @@
 ﻿namespace DotNetChallenge.Exceptions
 {
-    public class DuplicatePhoneException : Exception
+    public class DuplicatePhoneException : ConflictException
     {
         public DuplicatePhoneException(string message)
-        : base(message)
+            : base(message)
         {
         }
     }

@@ -1,5 +1,6 @@
 using DotNetChallenge.Data;
 using DotNetChallenge.Middleware;
+using DotNetChallenge.Services.Categories;
 using DotNetChallenge.Services.Customers;
 using DotNetChallenge.Services.Suppliers;
 using FluentValidation;
@@ -15,6 +16,7 @@ builder.Services.AddControllers();
 
 builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<ISupplierService, SupplierService>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
