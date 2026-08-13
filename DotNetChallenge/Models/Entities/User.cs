@@ -10,7 +10,6 @@
 
         public bool IsActive { get; set; } = true;
 
-        public ICollection<UserRole> UserRoles { get; set; }
-            = new List<UserRole>();
+        public ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
     }
 }
