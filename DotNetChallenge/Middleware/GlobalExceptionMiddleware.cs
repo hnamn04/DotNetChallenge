@@ -28,14 +28,13 @@ namespace DotNetChallenge.Middleware
 
             var statusCode = exception switch
             {
-                NotFoundException =>
-                    (int)HttpStatusCode.Conflict,
+                NotFoundException => (int)HttpStatusCode.NotFound,
 
-                ConflictException =>
-                    (int)HttpStatusCode.Conflict,
+                ConflictException => (int)HttpStatusCode.Conflict,
 
-                _ =>
-                    (int)HttpStatusCode.InternalServerError
+                UnauthorizedException => (int)HttpStatusCode.Unauthorized,
+
+                _ => (int)HttpStatusCode.InternalServerError
             };
 
             context.Response.StatusCode = statusCode;
