@@ -12,6 +12,8 @@
 
         public decimal SellingPrice { get; set; }
 
+        public bool IsActive { get; set; } = true;
+
         public Guid CategoryId { get; set; }
 
         public Category Category { get; set; } = null!;

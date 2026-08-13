@@ -280,6 +280,10 @@ public class AppDbContext : DbContext
                 .HasPrecision(18, 2)
                 .IsRequired();
 
+            entity.Property(x => x.IsActive)
+                .IsRequired()
+                .HasDefaultValue(true);
+
             entity.HasIndex(x => x.Code)
                 .IsUnique();
 
