@@ -58,21 +58,33 @@ namespace DotNetChallenge.Services.Auth
         {
             var email = request.Email.Trim().ToLowerInvariant();
 
+            // Retrieve the user from the database, including their roles
             var user = await _context.Users
+                .Include(x => x.UserRoles)
+                    .ThenInclude(x => x.Role)
                 .FirstOrDefaultAsync(x => x.Email.ToLower() == email);
 
+            // Validate the user's credentials
             if (user is null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
             {
                 throw new InvalidCredentialsException("Invalid email or password.");
             }
 
+            // Retrieve the user's roles
+            var roles = user.UserRoles
+                .Select(x => x.Role.Name)
+                .ToList();
+
+            // Check if the user is active
             if (!user.IsActive)
             {
                 throw new InvalidCredentialsException("User account is inactive.");
             }
 
+            // Generate a JWT token for the authenticated user
             var expiresAt = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpirationMinutes);
 
+            // Create claims for the JWT token
             var claims = new List<Claim>
             {
                 new(ClaimTypes.NameIdentifier, user.Id.ToString()),
@@ -80,14 +92,23 @@ namespace DotNetChallenge.Services.Auth
                 new(ClaimTypes.Name, user.Username)
             };
 
+            // Add role claims to the JWT token
+            foreach (var role in roles)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, role));
+            }
+
+            // Create a symmetric security key using the JWT secret key
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Key));
 
+            // Create signing credentials using the security key and HMAC SHA256 algorithm
             var credentials = new SigningCredentials
             (
                 key,
                 SecurityAlgorithms.HmacSha256
             );
 
+            // Create the JWT token with the specified issuer, audience, claims, expiration, and signing credentials
             var token = new JwtSecurityToken
             (
                 issuer: _jwtSettings.Issuer,
