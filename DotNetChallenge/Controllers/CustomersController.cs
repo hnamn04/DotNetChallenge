@@ -1,4 +1,5 @@
 ﻿using DotNetChallenge.DTOs.Customers;
+using DotNetChallenge.Models.Common;
 using DotNetChallenge.Services.Customers;
 using Microsoft.AspNetCore.Mvc;
 
@@ -20,17 +21,18 @@ namespace DotNetChallenge.Controllers
 
         // GET: /api/customers
         /// <summary>
-        /// Gets all customers.
+        /// Gets a paginated list of customers.
         /// </summary>
-        /// <returns>A list of customers.</returns>
-        /// <response code="200">Returns the customer list.</response>
+        /// <returns> A paginated list of customers. </returns>
+        /// <response code="200">Returns the paginated list of customers.</response>
         [HttpGet]
         [ProducesResponseType(typeof(IEnumerable<CustomerResponse>), StatusCodes.Status200OK)]
-        public async Task<ActionResult<IEnumerable<CustomerResponse>>> GetCustomers()
+        public async Task<ActionResult<ApiResponse<PaginatedList<CustomerResponse>>>> GetCustomers([FromQuery] CustomerQueryRequest request)
         {
-            var customers = await _customerService.GetAllAsync();
+            var result = await _customerService
+                .GetPagedAsync(request);
 
-            return Ok(customers);
+            return Ok(new ApiResponse<PaginatedList<CustomerResponse>>(true, "Customers retrieved successfully.", result));
         }
 
         // GET: /api/customers/{id}

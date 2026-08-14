@@ -1,7 +1,8 @@
-﻿using DotNetChallenge.Data;
+﻿using DotNetChallenge.Common.Helpers;
+using DotNetChallenge.Data;
 using DotNetChallenge.DTOs.Customers;
 using DotNetChallenge.Exceptions;
-using DotNetChallenge.Common.Helpers;
+using DotNetChallenge.Models.Common;
 using DotNetChallenge.Models.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -16,23 +17,23 @@ namespace DotNetChallenge.Services.Customers
             _context = context;
         }
 
-        public async Task<IEnumerable<CustomerResponse>> GetAllAsync()
-        {
-            return await _context.Customers
-                .AsNoTracking()
-                .OrderBy(x => x.Name)
-                .Select(x => new CustomerResponse
-                {
-                    Id = x.Id,
-                    Name = x.Name,
-                    Email = x.Email,
-                    Phone = x.Phone,
-                    Address = x.Address,
-                    CreatedAt = x.CreatedAt,
-                    UpdatedAt = x.UpdatedAt
-                })
-                .ToListAsync();
-        }
+        //public async Task<IEnumerable<CustomerResponse>> GetAllAsync()
+        //{
+        //    return await _context.Customers
+        //        .AsNoTracking()
+        //        .OrderBy(x => x.Name)
+        //        .Select(x => new CustomerResponse
+        //        {
+        //            Id = x.Id,
+        //            Name = x.Name,
+        //            Email = x.Email,
+        //            Phone = x.Phone,
+        //            Address = x.Address,
+        //            CreatedAt = x.CreatedAt,
+        //            UpdatedAt = x.UpdatedAt
+        //        })
+        //        .ToListAsync();
+        //}
 
         public async Task<CustomerResponse?> GetByIdAsync(Guid id)
         {
@@ -145,6 +146,46 @@ namespace DotNetChallenge.Services.Customers
             _context.Customers.Remove(customer);
 
             await _context.SaveChangesAsync();
+        }
+
+        // Paginated list of customers with search and pagination
+        public async Task<PaginatedList<CustomerResponse>> GetPagedAsync(CustomerQueryRequest request)
+        {
+            var query = _context.Customers
+                .AsNoTracking()
+                .AsQueryable();
+
+            // Search
+            if (!string.IsNullOrWhiteSpace(request.Search))
+            {
+                var search = request.Search.Trim();
+
+                // Case-insensitive search
+                query = query.Where(x =>
+                    EF.Functions.ILike(x.Name, $"%{search}%") || 
+                    EF.Functions.ILike(x.Email, $"%{search}%") ||
+                    EF.Functions.ILike(x.Phone, $"%{search}%"));
+            }
+
+            // Count after search
+            var totalItems = await query.CountAsync();
+
+            // Pagination
+            var customers = await query
+                .OrderBy(x => x.Name)
+                .Skip((request.Page - 1) * request.Limit)
+                .Take(request.Limit)
+                .ToListAsync();
+
+            var responses = customers
+                .Select(MapToResponse)
+                .ToList();
+
+            return new PaginatedList<CustomerResponse>(
+                responses,
+                request.Page,
+                request.Limit,
+                totalItems);
         }
 
         private static CustomerResponse MapToResponse(Customer customer)

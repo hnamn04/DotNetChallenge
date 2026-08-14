@@ -1,7 +1,8 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using DotNetChallenge.DTOs.SalesOrders;
+﻿using DotNetChallenge.DTOs.SalesOrders;
+using DotNetChallenge.Models.Common;
 using DotNetChallenge.Services.SalesOrders;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 
 namespace DotNetChallenge.Controllers
 {
@@ -30,11 +31,12 @@ namespace DotNetChallenge.Controllers
 
         // GET: api/sales-orders
         [HttpGet]
-        public async Task<ActionResult<List<SalesOrderResponse>>> GetAll()
+        public async Task<ActionResult<ApiResponse<PaginatedList<SalesOrderResponse>>>> GetAll([FromQuery] SalesOrderQueryRequest request)
         {
-            var result = await _salesOrderService.GetAllAsync();
+            var result = await _salesOrderService
+                .GetPagedAsync(request);
 
-            return Ok(result);
+            return Ok(new ApiResponse<PaginatedList<SalesOrderResponse>>(true, "Sales orders retrieved successfully.", result));
         }
 
         // GET: api/sales-orders/{id}

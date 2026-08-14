@@ -1,6 +1,7 @@
 ﻿using DotNetChallenge.Data;
 using DotNetChallenge.DTOs.SalesOrders;
 using DotNetChallenge.Exceptions;
+using DotNetChallenge.Models.Common;
 using DotNetChallenge.Models.Entities;
 using DotNetChallenge.Models.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -104,19 +105,19 @@ namespace DotNetChallenge.Services.SalesOrders
             return MapToResponse(order);
         }
 
-        // Get all sales orders
-        public async Task<List<SalesOrderResponse>> GetAllAsync()
-        {
-            var orders = await _context.SalesOrders
-                .AsNoTracking()
-                .Include(x => x.Items)
-                .OrderByDescending(x => x.OrderDate)
-                .ToListAsync();
+        //// Get all sales orders
+        //public async Task<List<SalesOrderResponse>> GetAllAsync()
+        //{
+        //    var orders = await _context.SalesOrders
+        //        .AsNoTracking()
+        //        .Include(x => x.Items)
+        //        .OrderByDescending(x => x.OrderDate)
+        //        .ToListAsync();
 
-            return orders
-                .Select(MapToResponse)
-                .ToList();
-        }
+        //    return orders
+        //        .Select(MapToResponse)
+        //        .ToList();
+        //}
 
         // Get a sales order by ID 
         public async Task<SalesOrderResponse> GetByIdAsync(Guid id)
@@ -252,6 +253,57 @@ namespace DotNetChallenge.Services.SalesOrders
             await _context.SaveChangesAsync();
 
             return MapToResponse(order);
+        }
+
+        // Get paginated sales orders based on query parameters
+        public async Task<PaginatedList<SalesOrderResponse>> GetPagedAsync(SalesOrderQueryRequest request)
+        {
+            var query = _context.SalesOrders
+                .AsNoTracking()
+                .Include(x => x.Items)
+                .AsQueryable();
+
+            // Filter by status
+            if (request.Status.HasValue)
+            {
+                query = query.Where(x => x.Status == request.Status.Value);
+            }
+
+            // Filter from date
+            if (request.FromDate.HasValue)
+            {
+                query = query.Where(x =>x.OrderDate >= request.FromDate.Value);
+            }
+
+            // Filter to date
+            if (request.ToDate.HasValue)
+            {
+                var toDate = request.ToDate.Value.Date.AddDays(1); // Include the entire day of the ToDate
+
+                query = query.Where(x => x.OrderDate < toDate);
+            }
+
+            // Count after filtering
+            var totalItems = await query.CountAsync();
+
+            // Pagination
+            var orders = await query
+                .OrderByDescending(x => x.OrderDate)
+                .Skip((request.Page - 1) * request.Limit)
+                .Take(request.Limit)
+                .ToListAsync();
+
+            var responses = orders
+                .Select(MapToResponse)
+                .ToList();
+
+            return new PaginatedList<SalesOrderResponse>
+                (
+                    responses,
+                    request.Page,
+                    request.Limit,
+                    totalItems
+                );
         }
 
         private static SalesOrderResponse MapToResponse(SalesOrder salesOrder)
