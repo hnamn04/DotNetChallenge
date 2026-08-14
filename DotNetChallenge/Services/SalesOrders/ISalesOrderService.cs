@@ -1,4 +1,5 @@
 ﻿using DotNetChallenge.DTOs.SalesOrders;
+using DotNetChallenge.Models.Common;
 
 namespace DotNetChallenge.Services.SalesOrders
 {
@@ -9,5 +10,6 @@ namespace DotNetChallenge.Services.SalesOrders
         Task<SalesOrderResponse> GetByIdAsync(Guid id);
         Task<SalesOrderResponse> ConfirmAsync(Guid id);
         Task<SalesOrderResponse> CancelAsync(Guid id);
+        Task<PaginatedList<SalesOrderResponse>> GetPagedAsync(SalesOrderQueryRequest request);
     }
 }

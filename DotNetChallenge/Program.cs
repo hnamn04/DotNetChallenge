@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Microsoft.OpenApi;
 using DotNetChallenge.Configuration;
 using DotNetChallenge.Data;
@@ -25,7 +26,11 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-builder.Services.AddControllers();
+builder.Services.AddControllers().AddJsonOptions(options =>
+{
+    options.JsonSerializerOptions.Converters.Add(
+        new JsonStringEnumConverter());
+}); ;
 
 builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<ISupplierService, SupplierService>();
