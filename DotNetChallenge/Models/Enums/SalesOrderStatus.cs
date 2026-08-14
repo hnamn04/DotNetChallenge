@@ -4,8 +4,7 @@
     {
         Draft,
         Confirmed,
-        Processing,
-        Completed,
-        Cancelled
+        Cancelled,
+        Completed
     }
 }
