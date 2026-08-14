@@ -1,3 +1,4 @@
+using DotNetChallenge.BackgroundJobs;
 using DotNetChallenge.Configuration;
 using DotNetChallenge.Data;
 using DotNetChallenge.Middleware;
@@ -5,6 +6,7 @@ using DotNetChallenge.Services.Auth;
 using DotNetChallenge.Services.Categories;
 using DotNetChallenge.Services.Customers;
 using DotNetChallenge.Services.Inventories;
+using DotNetChallenge.Services.Jobs;
 using DotNetChallenge.Services.Payments;
 using DotNetChallenge.Services.Products;
 using DotNetChallenge.Services.PurchaseOrders;
@@ -45,6 +47,9 @@ builder.Services.AddScoped<ISalesOrderService, SalesOrderService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<IReportService, ReportService>();
+builder.Services.AddScoped<IDailySummaryService, DailySummaryService>();
+
+builder.Services.AddHostedService<DailySummaryBackgroundService>();
 
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
 var jwtSettings = builder.Configuration
