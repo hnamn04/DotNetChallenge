@@ -1,6 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using DotNetChallenge.DTOs.Products;
+﻿using DotNetChallenge.DTOs.Products;
+using DotNetChallenge.Models.Common;
 using DotNetChallenge.Services.Products;
+using Microsoft.AspNetCore.Mvc;
 
 namespace DotNetChallenge.Controllers
 {
@@ -28,13 +29,14 @@ namespace DotNetChallenge.Controllers
         
         // GET: /api/products
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<ProductResponse>>> GetAll()
+        public async Task<ActionResult<ApiResponse<PaginatedList<ProductResponse>>>> GetAll([FromQuery] ProductQueryRequest request)
         {
-            var response = await _productService.GetAllAsync();
+            var result = await _productService
+                .GetPagedAsync(request);
 
-            return Ok(response);
+            return Ok(new ApiResponse<PaginatedList<ProductResponse>>(true, "Products retrieved successfully.", result));
         }
-
+         
         // GET: /api/products/{id}
         [HttpGet("{id:guid}")]
         public async Task<ActionResult<ProductResponse>> GetById(Guid id)

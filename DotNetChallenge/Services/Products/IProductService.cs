@@ -1,4 +1,5 @@
 ﻿using DotNetChallenge.DTOs.Products;
+using DotNetChallenge.Models.Common;
 
 namespace DotNetChallenge.Services.Products
 {
@@ -13,5 +14,7 @@ namespace DotNetChallenge.Services.Products
         Task<ProductResponse> UpdateAsync(Guid id, UpdateProductRequest request);
 
         Task DeleteAsync(Guid id);
+
+        Task<PaginatedList<ProductResponse>> GetPagedAsync(ProductQueryRequest request);
     }
 }

@@ -2,6 +2,7 @@
 using DotNetChallenge.DTOs.Products;
 using DotNetChallenge.Exceptions;
 using DotNetChallenge.Models;
+using DotNetChallenge.Models.Common;
 using DotNetChallenge.Models.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -174,6 +175,55 @@ namespace DotNetChallenge.Services.Products
             _context.Products.Remove(product);
 
             await _context.SaveChangesAsync();
+        }
+
+        public async Task<PaginatedList<ProductResponse>> GetPagedAsync(ProductQueryRequest request)
+        {
+            // Validate pagination parameters
+            var query = _context.Products
+                .AsNoTracking()
+                .Include(x => x.Category)
+                .Include(x => x.Unit)
+                .AsQueryable();
+
+            // Search filter
+            if (!string.IsNullOrWhiteSpace(request.Search))
+            {
+                var search = request.Search.Trim();
+
+                query = query.Where(x =>
+                    EF.Functions.ILike(x.Name, $"%{search}%") || // Case-insensitive search
+                    EF.Functions.ILike(x.Code, $"%{search}%")); 
+            }
+
+            // Filter by category
+            if (request.CategoryId.HasValue)
+            {
+                query = query.Where(x =>
+                    x.CategoryId == request.CategoryId.Value);
+            }
+
+            // Count after search and filter
+            var totalItems = await query.CountAsync();
+
+            // Pagination
+            var products = await query
+                .OrderBy(x => x.Name)
+                .Skip((request.Page - 1) * request.Limit)
+                .Take(request.Limit)
+                .ToListAsync();
+
+            var responses = products
+                .Select(MapToResponse)
+                .ToList();
+
+            return new PaginatedList<ProductResponse>
+                (
+                    responses,
+                    request.Page,
+                    request.Limit,
+                    totalItems
+                );
         }
 
         private static ProductResponse MapToResponse(Product product)
