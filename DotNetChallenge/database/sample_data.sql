@@ -6,7 +6,8 @@ INSERT INTO roles (id, name, created_at)
 VALUES
 ('10000000-0000-0000-0000-000000000001', 'Admin', NOW()),
 ('10000000-0000-0000-0000-000000000002', 'Staff', NOW()),
-('10000000-0000-0000-0000-000000000003', 'Manager', NOW());
+('10000000-0000-0000-0000-000000000003', 'Manager', NOW()),
+('10000000-0000-0000-0000-000000000004', 'Accountant', NOW());
 
 
 -- =============================================
@@ -468,12 +469,15 @@ VALUES
     'Product sold',
     NOW()
 );
-
+SELECT * FROM categories;
+SELECT * FROM customers;
 SELECT * FROM users;
 SELECT * FROM roles;
 SELECT * FROM products;
 SELECT * FROM inventory;
 SELECT * FROM purchase_orders;
 SELECT * FROM sales_orders;
+SELECT * FROM sales_order_items;
 SELECT * FROM payments;
 SELECT * FROM stock_transactions;
+SELECT * FROM suppliers;

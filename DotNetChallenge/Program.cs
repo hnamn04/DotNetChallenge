@@ -1,5 +1,3 @@
-using System.Text.Json.Serialization;
-using Microsoft.OpenApi;
 using DotNetChallenge.Configuration;
 using DotNetChallenge.Data;
 using DotNetChallenge.Middleware;
@@ -7,19 +5,22 @@ using DotNetChallenge.Services.Auth;
 using DotNetChallenge.Services.Categories;
 using DotNetChallenge.Services.Customers;
 using DotNetChallenge.Services.Inventories;
+using DotNetChallenge.Services.Payments;
 using DotNetChallenge.Services.Products;
+using DotNetChallenge.Services.PurchaseOrders;
+using DotNetChallenge.Services.Roles;
+using DotNetChallenge.Services.SalesOrders;
 using DotNetChallenge.Services.Suppliers;
 using DotNetChallenge.Services.Units;
-using DotNetChallenge.Services.PurchaseOrders;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
 using System.Reflection;
 using System.Text;
-using DotNetChallenge.Services.SalesOrders;
-using DotNetChallenge.Services.Payments;
+using System.Text.Json.Serialization;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -41,6 +42,7 @@ builder.Services.AddScoped<IInventoryService, InventoryService>();
 builder.Services.AddScoped<IPurchaseOrderService, PurchaseOrderService>();
 builder.Services.AddScoped<ISalesOrderService, SalesOrderService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
+builder.Services.AddScoped<IRoleService, RoleService>();
 
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
 var jwtSettings = builder.Configuration
@@ -103,7 +105,7 @@ builder.Services.AddSwaggerGen(options =>
             Scheme = "bearer",
             BearerFormat = "JWT",
             In = ParameterLocation.Header,
-            Description ="Enter JWT token. Example: Bearer {your token}"
+            Description ="Enter JWT token"
         });
 
     options.AddSecurityRequirement(document =>
