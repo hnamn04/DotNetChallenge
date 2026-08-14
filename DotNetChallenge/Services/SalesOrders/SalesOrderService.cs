@@ -105,19 +105,19 @@ namespace DotNetChallenge.Services.SalesOrders
             return MapToResponse(order);
         }
 
-        // Get all sales orders
-        public async Task<List<SalesOrderResponse>> GetAllAsync()
-        {
-            var orders = await _context.SalesOrders
-                .AsNoTracking()
-                .Include(x => x.Items)
-                .OrderByDescending(x => x.OrderDate)
-                .ToListAsync();
+        //// Get all sales orders
+        //public async Task<List<SalesOrderResponse>> GetAllAsync()
+        //{
+        //    var orders = await _context.SalesOrders
+        //        .AsNoTracking()
+        //        .Include(x => x.Items)
+        //        .OrderByDescending(x => x.OrderDate)
+        //        .ToListAsync();
 
-            return orders
-                .Select(MapToResponse)
-                .ToList();
-        }
+        //    return orders
+        //        .Select(MapToResponse)
+        //        .ToList();
+        //}
 
         // Get a sales order by ID 
         public async Task<SalesOrderResponse> GetByIdAsync(Guid id)

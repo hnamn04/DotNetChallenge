@@ -1,4 +1,6 @@
 ﻿using DotNetChallenge.DTOs.PurchaseOrders;
+using DotNetChallenge.DTOs.SalesOrders;
+using DotNetChallenge.Models.Common;
 using DotNetChallenge.Services.PurchaseOrders;
 using Microsoft.AspNetCore.Mvc;
 
@@ -29,11 +31,12 @@ namespace DotNetChallenge.Controllers
 
         // GET: api/purchase-orders
         [HttpGet]
-        public async Task<ActionResult<List<PurchaseOrderResponse>>> GetAll()
+        public async Task<ActionResult<ApiResponse<PaginatedList<PurchaseOrderResponse>>>> GetAll([FromQuery] PurchaseOrderQueryRequest request)
         {
-            var result = await _purchaseOrderService.GetAllAsync();
+            var result = await _purchaseOrderService
+                .GetPagedAsync(request);
 
-            return Ok(result);
+            return Ok(new ApiResponse<PaginatedList<PurchaseOrderResponse>>(true, "Purchase orders retrieved successfully.", result));
         }
 
         // GET: api/purchase-orders/{id}

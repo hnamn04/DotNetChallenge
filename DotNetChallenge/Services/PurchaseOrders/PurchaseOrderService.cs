@@ -1,6 +1,7 @@
 ﻿using DotNetChallenge.Data;
 using DotNetChallenge.DTOs.PurchaseOrders;
 using DotNetChallenge.Exceptions;
+using DotNetChallenge.Models.Common;
 using DotNetChallenge.Models.Entities;
 using DotNetChallenge.Models.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -87,19 +88,19 @@ namespace DotNetChallenge.Services.PurchaseOrders
             return MapToResponse(order);
         }
 
-        // Get all purchase orders
-        public async Task<List<PurchaseOrderResponse>> GetAllAsync()
-        {
-            var orders = await _context.PurchaseOrders
-                .AsNoTracking()
-                .Include(x => x.Items)
-                .OrderByDescending(x => x.OrderDate)
-                .ToListAsync();
+        //// Get all purchase orders
+        //public async Task<List<PurchaseOrderResponse>> GetAllAsync()
+        //{
+        //    var orders = await _context.PurchaseOrders
+        //        .AsNoTracking()
+        //        .Include(x => x.Items)
+        //        .OrderByDescending(x => x.OrderDate)
+        //        .ToListAsync();
 
-            return orders
-                .Select(MapToResponse)
-                .ToList();
-        }
+        //    return orders
+        //        .Select(MapToResponse)
+        //        .ToList();
+        //}
 
         // Get a purchase order by id
         public async Task<PurchaseOrderResponse> GetByIdAsync(Guid id)
@@ -233,7 +234,56 @@ namespace DotNetChallenge.Services.PurchaseOrders
             return MapToResponse(order);
         }
 
+        // Get paginated purchase orders with optional filtering by status and date range
+        public async Task<PaginatedList<PurchaseOrderResponse>> GetPagedAsync(PurchaseOrderQueryRequest request)
+        {
+            var query = _context.PurchaseOrders
+                .AsNoTracking()
+                .Include(x => x.Items)
+                .AsQueryable();
 
+            // Filter by status
+            if (request.Status.HasValue)
+            {
+                query = query.Where(x => x.Status == request.Status.Value);
+            }
+
+            // Filter from date
+            if (request.FromDate.HasValue)
+            {
+                query = query.Where(x => x.OrderDate >= request.FromDate.Value);
+            }
+
+            // Filter to date
+            if (request.ToDate.HasValue)
+            {
+                var toDate = request.ToDate.Value.Date.AddDays(1); // Include the entire day of the ToDate
+
+                query = query.Where(x => x.OrderDate < toDate);
+            }
+
+            // Count after filtering
+            var totalItems = await query.CountAsync();
+
+            // Pagination
+            var orders = await query
+                .OrderByDescending(x => x.OrderDate)
+                .Skip((request.Page - 1) * request.Limit)
+                .Take(request.Limit)
+                .ToListAsync();
+
+            var responses = orders
+                .Select(MapToResponse)
+                .ToList();
+
+            return new PaginatedList<PurchaseOrderResponse>
+                (
+                    responses,
+                    request.Page,
+                    request.Limit,
+                    totalItems
+                );
+        }
         private static PurchaseOrderResponse MapToResponse(PurchaseOrder purchaseOrder)
         {
             return new PurchaseOrderResponse
