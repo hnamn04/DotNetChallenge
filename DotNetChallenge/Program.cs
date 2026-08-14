@@ -8,6 +8,7 @@ using DotNetChallenge.Services.Inventories;
 using DotNetChallenge.Services.Payments;
 using DotNetChallenge.Services.Products;
 using DotNetChallenge.Services.PurchaseOrders;
+using DotNetChallenge.Services.Reports;
 using DotNetChallenge.Services.Roles;
 using DotNetChallenge.Services.SalesOrders;
 using DotNetChallenge.Services.Suppliers;
@@ -43,6 +44,7 @@ builder.Services.AddScoped<IPurchaseOrderService, PurchaseOrderService>();
 builder.Services.AddScoped<ISalesOrderService, SalesOrderService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IRoleService, RoleService>();
+builder.Services.AddScoped<IReportService, ReportService>();
 
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
 var jwtSettings = builder.Configuration
