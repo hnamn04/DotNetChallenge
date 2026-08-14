@@ -4,6 +4,7 @@
     {
         Draft,
         Confirmed,
-        Cancelled
+        Cancelled,
+        Completed
     }
 }
