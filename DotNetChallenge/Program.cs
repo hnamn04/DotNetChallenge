@@ -18,6 +18,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Reflection;
 using System.Text;
 using DotNetChallenge.Services.SalesOrders;
+using DotNetChallenge.Services.Payments;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -34,6 +35,7 @@ builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IInventoryService, InventoryService>();
 builder.Services.AddScoped<IPurchaseOrderService, PurchaseOrderService>();
 builder.Services.AddScoped<ISalesOrderService, SalesOrderService>();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
 
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
 var jwtSettings = builder.Configuration
