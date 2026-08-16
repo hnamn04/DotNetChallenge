@@ -1,0 +1,39 @@
+﻿services:
+
+  postgres:
+    image: postgres:16
+    container_name: dotnetchallenge-postgres
+
+    environment:
+      POSTGRES_DB: dotnetchallenge
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Tinpro0036
+
+    ports:
+      - "5433:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database:/docker-entrypoint-initdb.d:ro
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: dotnetchallenge-app
+
+    depends_on:
+      - postgres
+
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=dotnetchallenge;Username=postgres;Password=Tinpro0036"
+
+    ports:
+      - "8080:8080"
+
+volumes:
+  postgres_data:
+

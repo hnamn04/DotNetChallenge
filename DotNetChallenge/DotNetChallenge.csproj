@@ -7,6 +7,8 @@
 
 	  <GenerateDocumentationFile>true</GenerateDocumentationFile>
 	  <NoWarn>$(NoWarn);1591</NoWarn>
+	  <UserSecretsId>e5cd82e9-0e7f-48d1-92af-4662ac528967</UserSecretsId>
+	  <DockerDefaultTargetOS>Windows</DockerDefaultTargetOS>
   </PropertyGroup>
 
   <ItemGroup>
@@ -22,6 +24,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.22.1" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.8" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="10.2.3" />
   </ItemGroup>
