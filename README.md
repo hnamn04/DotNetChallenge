@@ -200,17 +200,14 @@ Tạo file `.env` ở thư mục chứa `docker-compose.yml`.
 Ví dụ:
 
 ```env
-POSTGRES_PASSWORD=your-password
+POSTGRES_DB=your_db
+POSTGRES_USER=your_user
+POSTGRES_PASSWORD=your_password
+
+JWT_KEY=your_jwt_secret
+JWT_ISSUER=DotNetChallenge
+JWT_AUDIENCE=DotNetChallengeClient
 ```
-
-Không commit `.env`.
-
-Có thể sử dụng `.env.example` làm template:
-
-```env
-POSTGRES_PASSWORD=your-password-here
-```
-
 ---
 
 ## 5.2. Build Docker image
@@ -912,7 +909,7 @@ Job Failed
 
 ---
 
-# 14. Docker Architecture
+# 14. Docker
 
 Application được chạy trong một container riêng:
 
@@ -957,31 +954,7 @@ Không sử dụng `localhost` để kết nối PostgreSQL từ application con
 
 ---
 
-# 15. Security
-
-Project sử dụng environment variables cho các thông tin nhạy cảm.
-
-Ví dụ:
-
-```env
-POSTGRES_PASSWORD=your-password
-```
-
-File `.env` không được commit lên GitHub.
-
-Project cung cấp:
-
-```text
-.env.example
-```
-
-để mô tả các biến môi trường cần thiết.
-
-JWT secret và database password thật không được lưu trực tiếp trong source code.
-
----
-
-# 16. Database Migration
+# 15. Database Migration
 
 Database sử dụng EF Core migrations.
 
@@ -1001,7 +974,7 @@ Migration được sử dụng để tạo và cập nhật database schema.
 
 ---
 
-# 17. Testing / Demo
+# 16. Testing / Demo
 
 Có thể sử dụng Swagger để test các nghiệp vụ chính.
 
@@ -1041,7 +1014,7 @@ Recommended demo flow:
 
 ---
 
-# 18. Challenge Summary
+# 17. Challenge
 
 | Challenge | Nội dung |
 |---|---|
@@ -1060,7 +1033,7 @@ Recommended demo flow:
 
 ---
 
-# 19. Conclusion
+# 18. Kết luận
 
 DotNetChallenge hoàn thiện một hệ thống Web API quản lý bán hàng và kho hàng với các thành phần:
 

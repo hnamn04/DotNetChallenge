@@ -5,9 +5,9 @@
     container_name: dotnetchallenge-postgres
 
     environment:
-      POSTGRES_DB: dotnetchallenge
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: Tinpro0036
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
 
     ports:
       - "5433:5432"
@@ -29,7 +29,7 @@
     environment:
       ASPNETCORE_ENVIRONMENT: Development
 
-      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=dotnetchallenge;Username=postgres;Password=Tinpro0036"
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
 
     ports:
       - "8080:8080"

@@ -3,3 +3,6 @@
 ################################################################################
 
 /.vs
+/DotNetChallenge/obj
+/DotNetChallenge/DotNetChallenge.csproj.user
+/DotNetChallenge/bin/Debug/net8.0
