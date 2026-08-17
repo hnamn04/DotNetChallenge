@@ -1,6 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using DotNetChallenge.Common.Authorization;
 using DotNetChallenge.DTOs.Inventories;
 using DotNetChallenge.Services.Inventories;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace DotNetChallenge.Controllers
 {
@@ -16,6 +18,7 @@ namespace DotNetChallenge.Controllers
         }
 
         [HttpPost("import")]
+        [Authorize(Policy = PolicyConstants.InventoryManagement)]
         public async Task<ActionResult<InventoryResponse>> Import(InventoryImportRequest request)
         {
             var response = await _inventoryService.ImportAsync(request);
@@ -24,6 +27,7 @@ namespace DotNetChallenge.Controllers
         }
 
         [HttpPost("export")]
+        [Authorize(Policy = PolicyConstants.InventoryManagement)]
         public async Task<ActionResult<InventoryResponse>> Export(InventoryExportRequest request)
         {
             var response = await _inventoryService.ExportAsync(request);

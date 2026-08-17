@@ -6,6 +6,6 @@ namespace DotNetChallenge.Services.Roles
     {
         Task<List<RoleResponse>> GetAllAsync();
 
-        Task AssignRoleAsync(AssignRoleRequest request);
+        Task AssignRoleAsync(Guid userId, AssignRoleRequest request);
     }
 }

@@ -1,6 +1,8 @@
-﻿using DotNetChallenge.DTOs.SalesOrders;
+﻿using DotNetChallenge.Common.Authorization;
+using DotNetChallenge.DTOs.SalesOrders;
 using DotNetChallenge.Models.Common;
 using DotNetChallenge.Services.SalesOrders;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -19,6 +21,7 @@ namespace DotNetChallenge.Controllers
 
         // POST: api/sales-orders
         [HttpPost]
+        [Authorize(Policy = PolicyConstants.CreateSalesOrder)]
         public async Task<ActionResult<SalesOrderResponse>> Create(CreateSalesOrderRequest request)
         {
             var result = await _salesOrderService.CreateAsync(request);
@@ -50,6 +53,7 @@ namespace DotNetChallenge.Controllers
 
         // POST: api/sales-orders/{id}/confirm
         [HttpPost("{id:guid}/confirm")]
+        [Authorize(Policy = PolicyConstants.ManageOrders)]
         public async Task<ActionResult<SalesOrderResponse>> Confirm(Guid id)
         {
             var result = await _salesOrderService.ConfirmAsync(id);
@@ -59,6 +63,7 @@ namespace DotNetChallenge.Controllers
 
         // POST: api/sales-orders/{id}/cancel
         [HttpPost("{id:guid}/cancel")]
+        [Authorize(Policy = PolicyConstants.ManageOrders)]
         public async Task<ActionResult<SalesOrderResponse>> Cancel(Guid id)
         {
             var result = await _salesOrderService.CancelAsync(id);
