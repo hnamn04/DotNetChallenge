@@ -1,4 +1,5 @@
-﻿using DotNetChallenge.DTOs.Roles;
+﻿using DotNetChallenge.Common.Authorization;
+using DotNetChallenge.DTOs.Roles;
 using DotNetChallenge.Models.Common;
 using DotNetChallenge.Services.Roles;
 using Microsoft.AspNetCore.Authorization;
@@ -9,7 +10,6 @@ namespace DotNetChallenge.Controllers
 {
     [Route("api/roles")]
     [ApiController]
-    [Authorize(Roles = "Admin")]
     public class RoleController : ControllerBase
     {
         private readonly IRoleService _roleService;
@@ -21,6 +21,7 @@ namespace DotNetChallenge.Controllers
 
         // GET: api/roles
         [HttpGet]
+        [Authorize(Policy = PolicyConstants.AdminOnly)]
         public async Task<ActionResult<ApiResponse<List<RoleResponse>>>> GetAll()
         {
             var roles = await _roleService.GetAllAsync();
@@ -30,20 +31,6 @@ namespace DotNetChallenge.Controllers
                     true,
                     "Roles retrieved successfully.",
                     roles));
-        }
-
-        // POST: api/roles/{id}/roles
-        [HttpPost("{id}/roles")]
-        [Authorize(Roles = "Admin")]
-        public async Task<ActionResult<ApiResponse<object>>>AssignRole(AssignRoleRequest request)
-        {
-            await _roleService.AssignRoleAsync(request);
-
-            return Ok(
-                new ApiResponse<object>(
-                    true,
-                    "Role assigned successfully.",
-                    null));
         }
     }
 }

@@ -33,16 +33,16 @@ namespace DotNetChallenge.Services.Roles
         }
 
         // Assign a role to a user
-        public async Task AssignRoleAsync(AssignRoleRequest request)
+        public async Task AssignRoleAsync(Guid userId, AssignRoleRequest request)
         {
             // Check user
             var userExists = await _context.Users
-                .AnyAsync(x => x.Id == request.UserId);
+                .AnyAsync(x => x.Id == userId);
 
             // If the user does not exist, throw a NotFoundException
             if (!userExists)
             {
-                throw new NotFoundException($"User with id '{request.UserId}' was not found.");
+                throw new NotFoundException($"User with id '{userId}' was not found.");
             }
 
             // Check role
@@ -58,7 +58,7 @@ namespace DotNetChallenge.Services.Roles
             // Check duplicate role
             var alreadyAssigned = await _context.UserRoles
                 .AnyAsync(x =>
-                    x.UserId == request.UserId &&
+                    x.UserId == userId &&
                     x.RoleId == request.RoleId);
 
             // If the role is already assigned to the user, throw a ConflictException
@@ -69,7 +69,7 @@ namespace DotNetChallenge.Services.Roles
 
             var userRole = new UserRole
             {
-                UserId = request.UserId,
+                UserId = userId,
                 RoleId = request.RoleId
             };
 

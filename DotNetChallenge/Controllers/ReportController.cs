@@ -1,4 +1,5 @@
-﻿using DotNetChallenge.DTOs.Reports;
+﻿using DotNetChallenge.Common.Authorization;
+using DotNetChallenge.DTOs.Reports;
 using DotNetChallenge.Models.Common;
 using DotNetChallenge.Services.Reports;
 using Microsoft.AspNetCore.Authorization;
@@ -9,6 +10,7 @@ namespace DotNetChallenge.Controllers
 {
     [Route("api/reports")]
     [ApiController]
+    [Authorize(Policy = PolicyConstants.ReportAccess)]
     public class ReportController : ControllerBase
     {
         private readonly IReportService _reportService; 
@@ -20,7 +22,7 @@ namespace DotNetChallenge.Controllers
 
         // GET: api/reports/revenue
         [HttpGet("revenue")]
-        [Authorize(Roles = "Admin,Manager,Accountant")] 
+
         public async Task<ActionResult<ApiResponse<RevenueReportResponse>>> GetRevenue([FromQuery] RevenueReportRequest request) 
         { 
             var result = await _reportService.GetRevenueAsync(request); 
@@ -30,7 +32,6 @@ namespace DotNetChallenge.Controllers
 
         // GET: api/reports/inventory-low-stock
         [HttpGet("inventory-low-stock")]
-        [Authorize(Roles = "Admin,Manager,Accountant")] 
         public async Task<ActionResult<ApiResponse<List<LowStockResponse>>>> GetLowStock([FromQuery] LowStockRequest request) 
         { 
             var result = await _reportService.GetLowStockAsync(request); 
@@ -40,7 +41,6 @@ namespace DotNetChallenge.Controllers
 
         // GET: api/reports/sales/export
         [HttpGet("sales/export")]
-        [Authorize(Roles = "Admin,Manager,Accountant")] 
         public async Task<IActionResult> ExportSales() 
         { 
             var file = await _reportService.ExportSalesAsync(); 

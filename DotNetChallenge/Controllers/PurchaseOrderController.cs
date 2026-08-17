@@ -1,7 +1,9 @@
-﻿using DotNetChallenge.DTOs.PurchaseOrders;
+﻿using DotNetChallenge.Common.Authorization;
+using DotNetChallenge.DTOs.PurchaseOrders;
 using DotNetChallenge.DTOs.SalesOrders;
 using DotNetChallenge.Models.Common;
 using DotNetChallenge.Services.PurchaseOrders;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DotNetChallenge.Controllers
@@ -19,6 +21,7 @@ namespace DotNetChallenge.Controllers
 
         // POST: api/purchase-orders
         [HttpPost]
+        [Authorize(Policy = PolicyConstants.InventoryManagement)]
         public async Task<ActionResult<PurchaseOrderResponse>> Create(CreatePurchaseOrderRequest request)
         {
             var result = await _purchaseOrderService.CreateAsync(request);
@@ -50,6 +53,7 @@ namespace DotNetChallenge.Controllers
 
         // PUT: api/purchase-orders/{id}
         [HttpPost("{id:guid}/confirm")]
+        [Authorize(Policy = PolicyConstants.ManageOrders)]
         public async Task<ActionResult<PurchaseOrderResponse>> Confirm(Guid id)
         {
             var result = await _purchaseOrderService.ConfirmAsync(id);
@@ -59,6 +63,7 @@ namespace DotNetChallenge.Controllers
 
         // POST: api/purchase-orders/{id}/cancel
         [HttpPost("{id:guid}/cancel")]
+        [Authorize(Policy = PolicyConstants.ManageOrders)]
         public async Task<ActionResult<PurchaseOrderResponse>> Cancel(Guid id)
         {
             var result = await _purchaseOrderService.CancelAsync(id);

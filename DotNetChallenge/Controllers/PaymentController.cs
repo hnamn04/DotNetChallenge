@@ -1,5 +1,7 @@
-﻿using DotNetChallenge.DTOs.Payments;
+﻿using DotNetChallenge.Common.Authorization;
+using DotNetChallenge.DTOs.Payments;
 using DotNetChallenge.Services.Payments;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -18,6 +20,7 @@ namespace DotNetChallenge.Controllers
 
         // POST: api/sales-orders/{salesOrderId}/payments
         [HttpPost]
+        [Authorize(Policy = PolicyConstants.PaymentAccess)]
         public async Task<ActionResult<PaymentResponse>> Create(Guid salesOrderId, CreatePaymentRequest request)
         {
             var result = await _paymentService.CreateAsync(salesOrderId, request);
@@ -27,6 +30,7 @@ namespace DotNetChallenge.Controllers
 
         // GET: api/sales-orders/{salesOrderId}/payments
         [HttpGet]
+        [Authorize(Policy = PolicyConstants.PaymentAccess)]
         public async Task<ActionResult<List<PaymentResponse>>> GetAll(Guid salesOrderId)
         {
             var result = await _paymentService

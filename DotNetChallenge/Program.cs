@@ -1,4 +1,5 @@
 using DotNetChallenge.BackgroundJobs;
+using DotNetChallenge.Common.Authorization;
 using DotNetChallenge.Configuration;
 using DotNetChallenge.Data;
 using DotNetChallenge.Middleware;
@@ -85,7 +86,56 @@ builder.Services.AddAuthentication(
             };
     });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy(
+        PolicyConstants.AdminOnly,
+        policy =>
+            policy.RequireRole(RoleConstants.Admin));
+
+    options.AddPolicy(
+        PolicyConstants.ManageOrders,
+        policy =>
+            policy.RequireRole(
+                RoleConstants.Admin,
+                RoleConstants.Manager));
+
+    options.AddPolicy(
+        PolicyConstants.CreateSalesOrder,
+        policy =>
+            policy.RequireRole(
+                RoleConstants.Admin,
+                RoleConstants.Staff));
+
+    options.AddPolicy(
+        PolicyConstants.InventoryManagement,
+        policy =>
+            policy.RequireRole(
+                RoleConstants.Admin,
+                RoleConstants.Staff));
+
+    options.AddPolicy(
+        PolicyConstants.ViewInventory,
+        policy =>
+            policy.RequireRole(
+                RoleConstants.Admin,
+                RoleConstants.Staff));
+
+    options.AddPolicy(
+        PolicyConstants.PaymentAccess,
+        policy =>
+            policy.RequireRole(
+                RoleConstants.Admin,
+                RoleConstants.Accountant));
+
+    options.AddPolicy(
+        PolicyConstants.ReportAccess,
+        policy =>
+            policy.RequireRole(
+                RoleConstants.Admin,
+                RoleConstants.Manager,
+                RoleConstants.Accountant));
+});
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
