@@ -129,10 +129,11 @@ namespace DotNetChallenge.Services.PurchaseOrders
 
             try
             {
-                // Get the purchase order by id, including its items
+                // Get the purchase order by id, including its items, and lock it for update to prevent concurrent modifications
                 var order = await _context.PurchaseOrders
+                    .FromSqlInterpolated($"SELECT * FROM purchase_orders WHERE id = {id} FOR UPDATE")
                     .Include(x => x.Items)
-                    .FirstOrDefaultAsync(x => x.Id == id);
+                    .FirstOrDefaultAsync();
 
                 // If the purchase order is not found, throw a NotFoundException
                 if (order is null)
@@ -146,13 +147,18 @@ namespace DotNetChallenge.Services.PurchaseOrders
                     throw new ConflictException("Purchase order has already been processed.");
                 }
 
+                // Get the distinct product IDs from the purchase order items
+                var productIds = order.Items.Select(i => i.ProductId).Distinct().ToList();
+
+                // Retrieve the inventory records for the products in the purchase order and store them in a dictionary for quick access
+                var inventories = await _context.Inventories
+                    .Where(inv => productIds.Contains(inv.ProductId))
+                    .ToDictionaryAsync(inv => inv.ProductId);
+
                 // Update inventory and create stock transactions for each item in the purchase order
                 foreach (var item in order.Items)
                 {
-                    // Check if the inventory record for the product exists
-                    var inventory = await _context.Inventories
-                        .FirstOrDefaultAsync(
-                            x => x.ProductId == item.ProductId);
+                    inventories.TryGetValue(item.ProductId, out var inventory);
 
                     // If the inventory record does not exist, create a new one; otherwise, update the existing record
                     if (inventory is null)
@@ -162,14 +168,19 @@ namespace DotNetChallenge.Services.PurchaseOrders
                             Id = Guid.NewGuid(),
                             ProductId = item.ProductId,
                             Quantity = item.Quantity,
-                            ReservedQuantity = 0
+                            ReservedQuantity = 0,
+                            Version = Guid.NewGuid(),
+                            CreatedAt = DateTime.UtcNow
                         };
 
                         _context.Inventories.Add(inventory);
+                        inventories.Add(item.ProductId, inventory);
                     }
                     else
                     {
                         inventory.Quantity += item.Quantity;
+                        inventory.Version = Guid.NewGuid(); // Update the version for optimistic concurrency control
+                        inventory.UpdatedAt = DateTime.UtcNow;
                     }
 
                     // Create a stock transaction
