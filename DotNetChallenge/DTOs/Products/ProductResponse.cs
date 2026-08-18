@@ -9,6 +9,7 @@
         public decimal CostPrice { get; set; }
         public decimal SellingPrice { get; set; }
         public Guid CategoryId { get; set; }
+        public bool IsActive { get; set; }
         public string CategoryName { get; set; } = string.Empty;
         public Guid UnitId { get; set; }
         public string UnitName { get; set; } = string.Empty;

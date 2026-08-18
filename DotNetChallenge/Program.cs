@@ -50,13 +50,18 @@ builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IDailySummaryService, DailySummaryService>();
 
+
+
 builder.Services.AddHostedService<DailySummaryBackgroundService>();
 
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
+builder.Services.Configure<DailySummaryJobSettings>(builder.Configuration.GetSection("DailySummaryJobSettings"));
+
 var jwtSettings = builder.Configuration
     .GetSection("Jwt")
     .Get<JwtSettings>()
     ?? throw new InvalidOperationException("JWT configuration is missing.");
+
 builder.Services.AddScoped<IAuthService, AuthService>();
 
 builder.Services.AddAuthentication(
