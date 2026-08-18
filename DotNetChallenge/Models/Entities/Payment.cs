@@ -12,8 +12,6 @@ namespace DotNetChallenge.Models.Entities
 
         public string Method { get; set; } = null!;
 
-        public PaymentStatus Status { get; set; } = PaymentStatus.Unpaid;
-
         public DateTime? PaidAt { get; set; }
     }
 }

@@ -19,65 +19,81 @@ namespace DotNetChallenge.Services.Payments
         // Create payment
         public async Task<PaymentResponse> CreateAsync(Guid salesOrderId, CreatePaymentRequest request)
         {
-            // Check if the sales order exists
-            var order = await _context.SalesOrders
-                .FirstOrDefaultAsync(x => x.Id == salesOrderId);
+            // Start a database transaction to ensure atomicity of the payment creation process
+            await using var transaction = await _context.Database.BeginTransactionAsync();
 
-            // If the order does not exist, throw a NotFoundException
-            if (order is null)
+            try
             {
-                throw new NotFoundException($"Sales order with id '{salesOrderId}' was not found.");
+                // Lock dòng SalesOrder bằng FOR UPDATE để các request phải xếp hàng
+                var order = await _context.SalesOrders
+                    .FromSqlInterpolated($"SELECT * FROM sales_orders WHERE id = {salesOrderId} FOR UPDATE")
+                    .FirstOrDefaultAsync();
+
+                // If the order does not exist, throw a NotFoundException
+                if (order is null)
+                {
+                    throw new NotFoundException($"Sales order with id '{salesOrderId}' was not found.");
+                }
+
+                // Only confirmed order can receive payment
+                if (order.Status != SalesOrderStatus.Confirmed)
+                {
+                    throw new ConflictException("Payment can only be created for a confirmed sales order.");
+                }
+
+                // Calculate already paid amount
+                var paidAmount = await _context.Payments
+                    .Where(x => x.SalesOrderId == salesOrderId)
+                    .SumAsync(x => x.Amount);
+
+                // Check total payment
+                var newTotal = paidAmount + request.Amount;
+
+                // If the new total payment exceeds the order total amount, throw a ConflictException
+                if (newTotal > order.TotalAmount)
+                {
+                    throw new ConflictException("Total payment cannot exceed sales order total amount.");
+                }
+
+                // Determine payment status based on the new total payment
+                var paymentStatus = newTotal switch
+                {
+                    0 => PaymentStatus.Unpaid,
+
+                    var amount when amount < order.TotalAmount => PaymentStatus.Partial,
+
+                    _ => PaymentStatus.Paid
+                };
+
+                // Cập nhật PaymentStatus vào SalesOrder
+                order.PaymentStatus = paymentStatus;
+                _context.SalesOrders.Update(order);
+
+                // Create payment 
+                var payment = new Payment
+                {
+                    Id = Guid.NewGuid(),
+                    SalesOrderId = salesOrderId,
+                    SalesOrder = order,
+                    Amount = request.Amount,
+                    Method = request.Method,
+                    PaidAt = paymentStatus == PaymentStatus.Paid ? DateTime.UtcNow : null,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                _context.Payments.Add(payment);
+
+                await _context.SaveChangesAsync();
+
+                await transaction.CommitAsync();
+
+                return MapToResponse(payment);
             }
-
-            // Only confirmed order can receive payment
-            if (order.Status != SalesOrderStatus.Confirmed)
+            catch
             {
-                throw new ConflictException("Payment can only be created for a confirmed sales order.");
+                await transaction.RollbackAsync();
+                throw;
             }
-
-            // Calculate already paid amount
-            var paidAmount = await _context.Payments
-                .Where(x => x.SalesOrderId == salesOrderId)
-                .SumAsync(x => x.Amount);
-
-            // Check total payment
-            var newTotal = paidAmount + request.Amount;
-
-            // If the new total payment exceeds the order total amount, throw a ConflictException
-            if (newTotal > order.TotalAmount)
-            {
-                throw new ConflictException("Total payment cannot exceed sales order total amount.");
-            }
-
-            // Determine payment status based on the new total payment
-            var status = newTotal switch
-            {
-                0 => PaymentStatus.Unpaid,
-
-                var amount when amount < order.TotalAmount => PaymentStatus.Partial,
-
-                _ => PaymentStatus.Paid
-            };
-
-            // Create payment
-            var payment = new Payment
-            {
-                Id = Guid.NewGuid(),
-                SalesOrderId = salesOrderId,
-                Amount = request.Amount,
-                Method = request.Method,
-                Status = status,
-                PaidAt = status == PaymentStatus.Paid
-                    ? DateTime.UtcNow
-                    : null,
-                CreatedAt = DateTime.UtcNow
-            };
-
-            _context.Payments.Add(payment);
-
-            await _context.SaveChangesAsync();
-
-            return MapToResponse(payment);
         }
 
         // Get payments by sales order id
@@ -113,7 +129,7 @@ namespace DotNetChallenge.Services.Payments
                 SalesOrderId = payment.SalesOrderId,
                 Amount = payment.Amount,
                 Method = payment.Method,
-                Status = payment.Status,
+                Status = payment.SalesOrder.PaymentStatus,
                 PaidAt = payment.PaidAt,
                 CreatedAt = payment.CreatedAt,
                 UpdatedAt = payment.UpdatedAt

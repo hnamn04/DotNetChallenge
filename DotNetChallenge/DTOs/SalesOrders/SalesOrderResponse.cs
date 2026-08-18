@@ -13,5 +13,6 @@ namespace DotNetChallenge.DTOs.SalesOrders
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
         public List<SalesOrderItemResponse> Items { get; set; } = new List<SalesOrderItemResponse>();
+        public PaymentStatus PaymentStatus { get; set; }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using DotNetChallenge.Models;
 using DotNetChallenge.Models.Entities;
+using DotNetChallenge.Models.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace DotNetChallenge.Data;
@@ -471,6 +472,12 @@ public class AppDbContext : DbContext
                 .HasMaxLength(30)
                 .IsRequired();
 
+            entity.Property(x => x.PaymentStatus)
+                .HasConversion<string>()
+                .HasMaxLength(30)
+                .IsRequired()
+                .HasDefaultValue(PaymentStatus.Unpaid);
+
             entity.HasIndex(x => x.OrderNumber)
                 .IsUnique();
 
@@ -481,6 +488,8 @@ public class AppDbContext : DbContext
                 x.CustomerId,
                 x.OrderDate
             });
+
+            entity.HasIndex(x => x.PaymentStatus);
 
             entity.HasOne(x => x.Customer)
                 .WithMany(x => x.SalesOrders)
@@ -559,14 +568,7 @@ public class AppDbContext : DbContext
                 .HasMaxLength(50)
                 .IsRequired();
 
-            entity.Property(x => x.Status)
-                .HasConversion<string>()
-                .HasMaxLength(30)
-                .IsRequired();
-
             entity.HasIndex(x => x.SalesOrderId);
-
-            entity.HasIndex(x => x.Status);
 
             entity.HasOne(x => x.SalesOrder)
                 .WithMany(x => x.Payments)
