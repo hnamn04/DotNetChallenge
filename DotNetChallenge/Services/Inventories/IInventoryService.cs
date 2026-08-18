@@ -1,4 +1,5 @@
 ﻿using DotNetChallenge.DTOs.Inventories;
+using DotNetChallenge.Models.Common;
 
 namespace DotNetChallenge.Services.Inventories
 {
@@ -10,6 +11,6 @@ namespace DotNetChallenge.Services.Inventories
 
         Task<InventoryResponse> GetByProductIdAsync(Guid productId);
 
-        Task<IEnumerable<StockTransactionResponse>> GetTransactionsAsync();
+        Task<PaginatedList<StockTransactionResponse>> GetPagedTransactionsAsync(StockTransactionQueryRequest request);
     }
 }
