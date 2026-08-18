@@ -64,8 +64,7 @@ namespace DotNetChallenge.Services.Customers
 
                 if (phoneExists)
                 {
-                    throw new DuplicatePhoneException(
-                        "Customer phone already exists.");
+                    throw new DuplicatePhoneException("Customer phone already exists.");
                 }
             }
 
@@ -107,8 +106,7 @@ namespace DotNetChallenge.Services.Customers
 
                 if (phoneExists)
                 {
-                    throw new DuplicatePhoneException(
-                        "Customer phone already exists.");
+                    throw new DuplicatePhoneException("Customer phone already exists.");
                 }
             }
 
@@ -118,7 +116,15 @@ namespace DotNetChallenge.Services.Customers
             customer.Address = StringHelper.Normalize(request.Address);
             customer.UpdatedAt = DateTime.UtcNow;
 
-            await _context.SaveChangesAsync();
+            // Save changes with error handling for unique constraints
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException)
+            {
+                throw new ConflictException("The phone or email might already be in use.");
+            }
 
             return MapToResponse(customer);
         }
@@ -130,8 +136,7 @@ namespace DotNetChallenge.Services.Customers
 
             if (customer is null)
             {
-                throw new NotFoundException(
-                    $"Customer with id '{id}' was not found.");
+                throw new NotFoundException($"Customer with id '{id}' was not found.");
             }
 
             var hasOrders = await _context.SalesOrders
@@ -139,8 +144,7 @@ namespace DotNetChallenge.Services.Customers
 
             if (hasOrders)
             {
-                throw new ConflictException(
-                    "Cannot delete customer because it has existing orders.");
+                throw new ConflictException("Cannot delete customer because it has existing orders.");
             }
 
             _context.Customers.Remove(customer);
