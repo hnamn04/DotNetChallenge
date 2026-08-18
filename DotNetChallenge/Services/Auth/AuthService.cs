@@ -16,11 +16,13 @@ namespace DotNetChallenge.Services.Auth
     {
         private readonly AppDbContext _context;
         private readonly JwtSettings _jwtSettings;
+        private readonly ILogger<AuthService> _logger;
 
-        public AuthService(AppDbContext context, IOptions<JwtSettings> jwtSettings)
+        public AuthService(AppDbContext context, IOptions<JwtSettings> jwtSettings, ILogger<AuthService> logger)
         {
             _context = context;
             _jwtSettings = jwtSettings.Value;
+            _logger = logger;
         }
 
         // Register
@@ -64,9 +66,17 @@ namespace DotNetChallenge.Services.Auth
                     .ThenInclude(x => x.Role)
                 .FirstOrDefaultAsync(x => x.Email.ToLower() == email);
 
-            // Validate the user's credentials
-            if (user is null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+            // Logging: Check if the user exists
+            if (user is null)
             {
+                _logger.LogWarning("Login failed: User with email '{Email}' was not found.", email);
+                throw new InvalidCredentialsException("Invalid email or password.");
+            }
+
+            // Logging: Check if the password is correct
+            if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+            {
+                _logger.LogWarning("Login failed: Incorrect password attempt for email '{Email}'.", email);
                 throw new InvalidCredentialsException("Invalid email or password.");
             }
 
@@ -75,9 +85,10 @@ namespace DotNetChallenge.Services.Auth
                 .Select(x => x.Role.Name)
                 .ToList();
 
-            // Check if the user is active
+            // Logging: Check if the user account is active
             if (!user.IsActive)
             {
+                _logger.LogWarning("Login failed: User account '{Email}' is inactive.", email);
                 throw new InvalidCredentialsException("User account is inactive.");
             }
 
@@ -117,6 +128,9 @@ namespace DotNetChallenge.Services.Auth
                 expires: expiresAt,
                 signingCredentials: credentials
             );
+
+            // Logging: Successful login
+            _logger.LogInformation("User '{Email}' logged in successfully.", email);
 
             return new LoginResponse
             {
