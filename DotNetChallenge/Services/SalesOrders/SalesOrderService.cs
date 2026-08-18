@@ -61,6 +61,35 @@ namespace DotNetChallenge.Services.SalesOrders
                     $"Product with id '{inactiveProduct.Id}' is inactive.");
             }
 
+            // Check for duplicate product IDs in the request and sum their quantities
+            var productQuantities = request.Items
+                .GroupBy(x => x.ProductId)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.Sum(x => x.Quantity));
+
+            // Get inventories for the products in the request
+            var inventories = await _context.Inventories
+                .Where(x => productQuantities.Keys.Contains(x.ProductId))
+                .ToDictionaryAsync(x => x.ProductId);
+
+            // Check if there is sufficient stock for each product in the request
+            foreach (var item in productQuantities)
+            {
+                if (!inventories.TryGetValue(item.Key, out var inventory))
+                {
+                    throw new ConflictException($"Product with id '{item.Key}' has no inventory.");
+                }
+
+                if (inventory.Quantity < item.Value)
+                {
+                    throw new ConflictException(
+                        $"Insufficient stock for product '{item.Key}'. " +
+                        $"Available: {inventory.Quantity}, " +
+                        $"Required: {item.Value}.");
+                }
+            }
+
             // Create a new sales order
             var order = new SalesOrder
             {
@@ -163,43 +192,62 @@ namespace DotNetChallenge.Services.SalesOrders
                     throw new ConflictException("Sales order has already been processed.");
                 }
 
+                // Group items by ProductId
+                var productQuantities = order.Items
+                    .GroupBy(x => x.ProductId)
+                    .ToDictionary(
+                        g => g.Key,
+                        g => g.Sum(x => x.Quantity));
+
+                var productIds = productQuantities.Keys.ToList();
+
+                // Load inventories
+                var inventories = await _context.Inventories
+                    .Where(x => productIds.Contains(x.ProductId))
+                    .ToListAsync();
+
                 // Check inventory for each item in the order
-                foreach (var item in order.Items)
+                foreach (var productQuantity in productQuantities)
                 {
-                    // Check if the product has inventory
-                    var inventory = await _context.Inventories
-                        .FirstOrDefaultAsync(x => x.ProductId == item.ProductId);
+                    var productId = productQuantity.Key;
+                    var requiredQuantity = productQuantity.Value;
+
+                    var inventory = inventories
+                        .FirstOrDefault(x => x.ProductId == productId);
 
                     // If inventory is null, throw a ConflictException
                     if (inventory is null)
                     {
-                        throw new ConflictException($"Product with id '{item.ProductId}' has no inventory.");
+                        throw new ConflictException($"Product with id '{productId}' has no inventory.");
                     }
 
                     // Check if there is sufficient stock for the product
-                    if (inventory.Quantity < item.Quantity)
+                    if (inventory.Quantity < requiredQuantity)
                     {
-                        throw new ConflictException($"Insufficient stock for product '{item.ProductId}'.");
+                        throw new ConflictException($"Insufficient stock for product '{productId}'.");
                     }
                 }
 
-                // If all checks pass, update inventory and record stock transactions
-                foreach (var item in order.Items)
+                // Decrease inventory
+                foreach (var productQuantity in productQuantities)
                 {
-                    // Update inventory
-                    var inventory = await _context.Inventories
-                        .FirstAsync(x => x.ProductId == item.ProductId);
+                    var productId = productQuantity.Key;
+                    var requiredQuantity = productQuantity.Value;
 
-                    // Decrease the inventory quantity by the ordered quantity
-                    inventory.Quantity -= item.Quantity;
+                    var inventory = inventories
+                        .First(x => x.ProductId == productId);
 
-                    // Record stock transaction for the stock out
+                    inventory.Quantity -= requiredQuantity;
+
+                    // Generate new concurrency version
+                    inventory.Version = Guid.NewGuid();
+
                     var stockTransaction = new StockTransaction
                     {
                         Id = Guid.NewGuid(),
-                        ProductId = item.ProductId,
+                        ProductId = productId,
                         Type = StockTransactionType.StockOut,
-                        Quantity = item.Quantity,
+                        Quantity = requiredQuantity,
                         ReferenceType = "SalesOrder",
                         ReferenceId = order.Id,
                         Note = $"Stock out from sales order {order.OrderNumber}",
@@ -209,11 +257,17 @@ namespace DotNetChallenge.Services.SalesOrders
                     _context.StockTransactions.Add(stockTransaction);
                 }
 
-                // Update order status to Confirmed and set the updated timestamp
                 order.Status = SalesOrderStatus.Confirmed;
                 order.UpdatedAt = DateTime.UtcNow;
 
-                await _context.SaveChangesAsync();
+                try
+                {
+                    await _context.SaveChangesAsync();
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    throw new ConflictException("Inventory was changed by another request.");
+                }
 
                 await transaction.CommitAsync();
 

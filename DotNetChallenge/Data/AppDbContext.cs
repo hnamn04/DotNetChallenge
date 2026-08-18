@@ -334,6 +334,9 @@ public class AppDbContext : DbContext
                 .IsRequired()
                 .HasDefaultValue(0);
 
+            entity.Property(x => x.Version)
+                .IsConcurrencyToken();
+
             entity.Property(x => x.ReservedQuantity)
                 .IsRequired()
                 .HasDefaultValue(0);
