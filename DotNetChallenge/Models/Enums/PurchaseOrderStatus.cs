@@ -5,6 +5,5 @@
         Draft,
         Confirmed,
         Cancelled,
-        Completed
     }
 }
