@@ -16,6 +16,7 @@ namespace DotNetChallenge.Services.Suppliers
             _context = context;
         }
 
+        // Get all suppliers
         public async Task<IEnumerable<SupplierResponse>> GetAllAsync()
         {
             return await _context.Suppliers
@@ -34,6 +35,7 @@ namespace DotNetChallenge.Services.Suppliers
                 .ToListAsync();
         }
 
+        // Get supplier by id
         public async Task<SupplierResponse?> GetByIdAsync(Guid id)
         {
             return await _context.Suppliers
@@ -52,6 +54,7 @@ namespace DotNetChallenge.Services.Suppliers
                 .FirstOrDefaultAsync();
         }
 
+        // Create a new supplier
         public async Task<SupplierResponse> CreateAsync(CreateSupplierRequest request)
         {
             var phone = StringHelper.NormalizePhone(request.Phone);
@@ -63,8 +66,7 @@ namespace DotNetChallenge.Services.Suppliers
 
                 if (phoneExists)
                 {
-                    throw new DuplicatePhoneException(
-                        "Supplier phone already exists.");
+                    throw new DuplicatePhoneException("Supplier phone already exists.");
                 }
             }
 
@@ -85,6 +87,7 @@ namespace DotNetChallenge.Services.Suppliers
             return MapToResponse(supplier);
         }
 
+        // Update an existing supplier
         public async Task<SupplierResponse?> UpdateAsync(Guid id, UpdateSupplierRequest request)
         {
             var supplier = await _context.Suppliers
@@ -100,18 +103,29 @@ namespace DotNetChallenge.Services.Suppliers
             if (phone is not null)
             {
                 var phoneExists = await _context.Suppliers
-                    .AnyAsync(x =>
-                        x.Phone == phone &&
-                        x.Id != id);
+                    .AnyAsync(x => x.Phone == phone && x.Id != id);
 
                 if (phoneExists)
                 {
-                    throw new DuplicatePhoneException(
-                        "Supplier phone already exists.");
+                    throw new DuplicatePhoneException("Supplier phone already exists.");
                 }
             }
 
-            await _context.SaveChangesAsync();
+            supplier.Name = request.Name.Trim();
+            supplier.Email = StringHelper.Normalize(request.Email);
+            supplier.Phone = phone;
+            supplier.Address = StringHelper.Normalize(request.Address);
+            supplier.UpdatedAt = DateTime.UtcNow;
+
+            try
+            {
+                // Save changes to the database
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException) // Catch database update exceptions, which may occur due to unique constraint violations
+            {
+                throw new ConflictException("The phone or email might already be in use.");
+            }
 
             return MapToResponse(supplier);
         }
