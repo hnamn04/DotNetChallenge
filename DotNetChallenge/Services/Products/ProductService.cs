@@ -34,8 +34,7 @@ namespace DotNetChallenge.Services.Products
 
             if (category is null)
             {
-                throw new NotFoundException(
-                    $"Category with id '{request.CategoryId}' was not found.");
+                throw new NotFoundException($"Category with id '{request.CategoryId}' was not found.");
             }
 
             var unit = await _context.Units
@@ -43,8 +42,7 @@ namespace DotNetChallenge.Services.Products
 
             if (unit is null)
             {
-                throw new NotFoundException(
-                    $"Unit with id '{request.UnitId}' was not found.");
+                throw new NotFoundException($"Unit with id '{request.UnitId}' was not found.");
             }
 
             var product = new Product
@@ -57,6 +55,7 @@ namespace DotNetChallenge.Services.Products
                     : request.Description.Trim(),
                 CostPrice = request.CostPrice,
                 SellingPrice = request.SellingPrice,
+                IsActive = true,
                 CategoryId = request.CategoryId,
                 UnitId = request.UnitId,
                 Category = category,
@@ -75,6 +74,7 @@ namespace DotNetChallenge.Services.Products
         {
             var products = await _context.Products
                 .AsNoTracking()
+                .Where(x => x.IsActive)
                 .Include(x => x.Category)
                 .Include(x => x.Unit)
                 .OrderBy(x => x.Name)
@@ -89,7 +89,7 @@ namespace DotNetChallenge.Services.Products
                 .AsNoTracking()
                 .Include(x => x.Category)
                 .Include(x => x.Unit)
-                .FirstOrDefaultAsync(x => x.Id == id);
+                .FirstOrDefaultAsync(x => x.Id == id && x.IsActive);
 
             if (product is null)
             {
@@ -102,7 +102,7 @@ namespace DotNetChallenge.Services.Products
         public async Task<ProductResponse> UpdateAsync(Guid id, UpdateProductRequest request)
         {
             var product = await _context.Products
-                .FirstOrDefaultAsync(x => x.Id == id);
+                .FirstOrDefaultAsync(x => x.Id == id && x.IsActive);
 
             if (product is null)
             {
@@ -144,6 +144,7 @@ namespace DotNetChallenge.Services.Products
                 : request.Description.Trim();
             product.CostPrice = request.CostPrice;
             product.SellingPrice = request.SellingPrice;
+            product.IsActive = request.IsActive;
             product.CategoryId = request.CategoryId;
             product.UnitId = request.UnitId;
             product.Category = category;
@@ -162,11 +163,28 @@ namespace DotNetChallenge.Services.Products
 
             if (product is null)
             {
-                throw new NotFoundException(
-                    $"Product with id '{id}' was not found.");
+                throw new NotFoundException($"Product with id '{id}' was not found.");
             }
 
-            _context.Products.Remove(product);
+            var hasInventoryHistory = await _context.Inventories.AnyAsync(x => x.ProductId == id);
+
+            // Get all order history related to this product
+            var hasOrderHistory = 
+                await _context.PurchaseOrderItems.AnyAsync(x => x.ProductId == id) ||
+                await _context.SalesOrderItems.AnyAsync(x => x.ProductId == id);
+
+            // If the product has any inventory or order history, we should not hard delete it to maintain data integrity.
+            if (hasInventoryHistory || hasOrderHistory)
+            {
+                product.IsActive = false;
+
+                _context.Products.Update(product);
+            }
+            else
+            {
+                // If the product has no history, we can safely delete it.
+                _context.Products.Remove(product);
+            }
 
             await _context.SaveChangesAsync();
         }
@@ -176,6 +194,7 @@ namespace DotNetChallenge.Services.Products
             // Validate pagination parameters
             var query = _context.Products
                 .AsNoTracking()
+                .Where(x => x.IsActive)
                 .Include(x => x.Category)
                 .Include(x => x.Unit)
                 .AsQueryable();
@@ -230,6 +249,7 @@ namespace DotNetChallenge.Services.Products
                 Description = product.Description,
                 CostPrice = product.CostPrice,
                 SellingPrice = product.SellingPrice,
+                IsActive = product.IsActive,
                 CategoryId = product.CategoryId,
                 CategoryName = product.Category.Name,
                 UnitId = product.UnitId,
