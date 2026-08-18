@@ -1,5 +1,6 @@
 ﻿using DotNetChallenge.Common.Authorization;
 using DotNetChallenge.DTOs.Inventories;
+using DotNetChallenge.Models.Common;
 using DotNetChallenge.Services.Inventories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -45,12 +46,12 @@ namespace DotNetChallenge.Controllers
         }
 
         [HttpGet("transactions")]
-        public async Task<ActionResult<IEnumerable<StockTransactionResponse>>>GetTransactions()
+        public async Task<ActionResult<ApiResponse<PaginatedList<StockTransactionResponse>>>> GetTransactions([FromQuery] StockTransactionQueryRequest request)
         {
-            var response = await _inventoryService
-                .GetTransactionsAsync();
+            var result = await _inventoryService
+                .GetPagedTransactionsAsync(request);
 
-            return Ok(response);
+            return Ok(new ApiResponse<PaginatedList<StockTransactionResponse>>(true, "Stock transactions retrieved successfully.", result));
         }
     }
 }
