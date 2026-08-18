@@ -1,8 +1,8 @@
 ﻿namespace DotNetChallenge.Exceptions
 {
-    public class DuplicateProductCodeException : ConflictException
+    public class DuplicateProductSKUException : ConflictException
     {
-        public DuplicateProductCodeException(string message)
+        public DuplicateProductSKUException(string message)
             : base(message)
         {
         }

@@ -19,15 +19,14 @@ namespace DotNetChallenge.Services.Products
 
         public async Task<ProductResponse> CreateAsync(CreateProductRequest request)
         {
-            var code = request.Code.Trim();
+            var sku = request.SKU.Trim();
 
-            var codeExists = await _context.Products
-                .AnyAsync(x => x.Code == code);
+            var skuExists = await _context.Products
+                .AnyAsync(x => x.SKU == sku);
 
-            if (codeExists)
+            if (skuExists)
             {
-                throw new DuplicateProductCodeException(
-                    $"Product code '{code}' already exists.");
+                throw new DuplicateProductSKUException($"Product SKU '{sku}' already exists.");
             }
 
             var category = await _context.Categories
@@ -51,7 +50,7 @@ namespace DotNetChallenge.Services.Products
             var product = new Product
             {
                 Id = Guid.NewGuid(),
-                Code = code,
+                SKU = sku,
                 Name = request.Name.Trim(),
                 Description = string.IsNullOrWhiteSpace(request.Description)
                     ? null
@@ -94,8 +93,7 @@ namespace DotNetChallenge.Services.Products
 
             if (product is null)
             {
-                throw new NotFoundException(
-                    $"Product with id '{id}' was not found.");
+                throw new NotFoundException($"Product with id '{id}' was not found.");
             }
 
             return MapToResponse(product);
@@ -108,21 +106,19 @@ namespace DotNetChallenge.Services.Products
 
             if (product is null)
             {
-                throw new NotFoundException(
-                    $"Product with id '{id}' was not found.");
+                throw new NotFoundException($"Product with id '{id}' was not found.");
             }
 
-            var code = request.Code.Trim();
+            var sku = request.SKU.Trim();
 
-            var codeExists = await _context.Products
+            var skuExists = await _context.Products
                 .AnyAsync(x =>
-                    x.Code == code &&
+                    x.SKU == sku &&
                     x.Id != id);
 
-            if (codeExists)
+            if (skuExists)
             {
-                throw new DuplicateProductCodeException(
-                    $"Product code '{code}' already exists.");
+                throw new DuplicateProductSKUException($"Product SKU '{sku}' already exists.");
             }
 
             var category = await _context.Categories
@@ -130,8 +126,7 @@ namespace DotNetChallenge.Services.Products
 
             if (category is null)
             {
-                throw new NotFoundException(
-                    $"Category with id '{request.CategoryId}' was not found.");
+                throw new NotFoundException($"Category with id '{request.CategoryId}' was not found.");
             }
 
             var unit = await _context.Units
@@ -139,11 +134,10 @@ namespace DotNetChallenge.Services.Products
 
             if (unit is null)
             {
-                throw new NotFoundException(
-                    $"Unit with id '{request.UnitId}' was not found.");
+                throw new NotFoundException($"Unit with id '{request.UnitId}' was not found.");
             }
 
-            product.Code = code;
+            product.SKU = sku;
             product.Name = request.Name.Trim();
             product.Description = string.IsNullOrWhiteSpace(request.Description)
                 ? null
@@ -193,7 +187,7 @@ namespace DotNetChallenge.Services.Products
 
                 query = query.Where(x =>
                     EF.Functions.ILike(x.Name, $"%{search}%") || // Case-insensitive search
-                    EF.Functions.ILike(x.Code, $"%{search}%")); 
+                    EF.Functions.ILike(x.SKU, $"%{search}%")); 
             }
 
             // Filter by category
@@ -231,7 +225,7 @@ namespace DotNetChallenge.Services.Products
             return new ProductResponse
             {
                 Id = product.Id,
-                Code = product.Code,
+                SKU = product.SKU,
                 Name = product.Name,
                 Description = product.Description,
                 CostPrice = product.CostPrice,

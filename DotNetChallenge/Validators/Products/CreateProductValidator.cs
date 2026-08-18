@@ -7,7 +7,7 @@ namespace DotNetChallenge.Validators.Products
     {
         public CreateProductValidator()
         {
-            RuleFor(x => x.Code)
+            RuleFor(x => x.SKU)
                 .NotEmpty()
                 .WithMessage("Product code is required.")
                 .MaximumLength(50)

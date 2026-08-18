@@ -2,7 +2,7 @@
 {
     public class Product : BaseEntity
     {
-        public string Code { get; set; } = null!;
+        public string SKU { get; set; } = null!;
 
         public string Name { get; set; } = null!;
 
