@@ -262,7 +262,7 @@ public class AppDbContext : DbContext
 
             entity.HasKey(x => x.Id);
 
-            entity.Property(x => x.Code)
+            entity.Property(x => x.SKU)
                 .HasMaxLength(50)
                 .IsRequired();
 
@@ -285,7 +285,7 @@ public class AppDbContext : DbContext
                 .IsRequired()
                 .HasDefaultValue(true);
 
-            entity.HasIndex(x => x.Code)
+            entity.HasIndex(x => x.SKU)
                 .IsUnique();
 
             entity.HasIndex(x => x.Name);
