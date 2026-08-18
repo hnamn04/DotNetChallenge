@@ -20,6 +20,12 @@ namespace DotNetChallenge.Services.SalesOrders
         // Create a new sales order
         public async Task<SalesOrderResponse> CreateAsync(CreateSalesOrderRequest request)
         {
+            // Check if the request contains any items
+            if (request.Items == null || !request.Items.Any())
+            {
+                throw new ConflictException("A sales order must contain at least one item.");
+            }
+
             // Check if the customer exists
             var customerExists = await _context.Customers
                 .AnyAsync(x => x.Id == request.CustomerId);
@@ -30,37 +36,6 @@ namespace DotNetChallenge.Services.SalesOrders
                 throw new NotFoundException($"Customer with id '{request.CustomerId}' was not found.");
             }
 
-            // Check if the request contains any items
-            var productIds = request.Items
-                .Select(x => x.ProductId)
-                .Distinct()
-                .ToList();
-
-            // Get products from the database
-            var products = await _context.Products
-                .Where(x => productIds.Contains(x.Id))
-                .ToListAsync();
-
-            // Check if all product IDs in the request are valid
-            var invalidProductId = productIds
-                .FirstOrDefault(x => !products.Any(p => p.Id == x));
-
-            // If there is an invalid product ID, throw a NotFoundException
-            if (invalidProductId != Guid.Empty)
-            {
-                throw new NotFoundException($"Product with id '{invalidProductId}' was not found.");
-            }
-
-            // Check if any product is inactive
-            var inactiveProduct = products
-                .FirstOrDefault(x => !x.IsActive);
-
-            if (inactiveProduct is not null)
-            {
-                throw new ConflictException(
-                    $"Product with id '{inactiveProduct.Id}' is inactive.");
-            }
-
             // Check for duplicate product IDs in the request and sum their quantities
             var productQuantities = request.Items
                 .GroupBy(x => x.ProductId)
@@ -68,70 +43,109 @@ namespace DotNetChallenge.Services.SalesOrders
                     g => g.Key,
                     g => g.Sum(x => x.Quantity));
 
-            // Get inventories for the products in the request
-            var inventories = await _context.Inventories
-                .Where(x => productQuantities.Keys.Contains(x.ProductId))
-                .ToDictionaryAsync(x => x.ProductId);
+            var productIds = productQuantities.Keys.ToList();
 
-            // Check if there is sufficient stock for each product in the request
-            foreach (var item in productQuantities)
+            // Start a database transaction
+            await using var transaction = await _context.Database.BeginTransactionAsync();
+
+            try
             {
-                if (!inventories.TryGetValue(item.Key, out var inventory))
+                // Load products and their inventories from the database
+                var products = await _context.Products
+                    .Include(p => p.Inventory)
+                    .Where(x => productIds.Contains(x.Id))
+                    .OrderBy(p => p.Id)
+                    .ToListAsync();
+
+                // Check if all product IDs in the request are valid
+                var invalidProductId = productIds
+                    .FirstOrDefault(x => !products.Any(p => p.Id == x));
+
+                // If there is an invalid product ID, throw a NotFoundException
+                if (invalidProductId != Guid.Empty)
                 {
-                    throw new ConflictException($"Product with id '{item.Key}' has no inventory.");
+                    throw new NotFoundException($"Product with id '{invalidProductId}' was not found.");
                 }
 
-                if (inventory.Quantity < item.Value)
-                {
-                    throw new ConflictException(
-                        $"Insufficient stock for product '{item.Key}'. " +
-                        $"Available: {inventory.Quantity}, " +
-                        $"Required: {item.Value}.");
-                }
-            }
-
-            // Create a new sales order
-            var order = new SalesOrder
-            {
-                Id = Guid.NewGuid(),
-                OrderNumber = GenerateOrderNumber(),
-                CustomerId = request.CustomerId,
-                OrderDate = DateTime.UtcNow,
-                Status = SalesOrderStatus.Draft
-            };
-
-            // Create order items
-            foreach (var item in request.Items)
-            {
-                var product = products
-                    .First(x => x.Id == item.ProductId);
-
-                var orderItem = new SalesOrderItem
+                // Create a new sales order
+                var order = new SalesOrder
                 {
                     Id = Guid.NewGuid(),
-                    SalesOrderId = order.Id,
-                    ProductId = product.Id,
-                    Quantity = item.Quantity,
-
-                    // Save selling price at the time of sale
-                    UnitPrice = product.SellingPrice,
-
-                    TotalPrice =
-                        product.SellingPrice * item.Quantity
+                    OrderNumber = GenerateOrderNumber(),
+                    CustomerId = request.CustomerId,
+                    OrderDate = DateTime.UtcNow,
+                    Status = SalesOrderStatus.Draft,
+                    PaymentStatus = PaymentStatus.Unpaid, // Set initial PaymentStatus
+                    TotalAmount = 0,
+                    Items = new List<SalesOrderItem>()
                 };
 
-                order.Items.Add(orderItem);
+                // Create order items and update reserved inventory
+                foreach (var productQuantity in productQuantities)
+                {
+                    var product = products.First(x => x.Id == productQuantity.Key);
+                    var requiredQuantity = productQuantity.Value;
+
+                    if (!product.IsActive)
+                    {
+                        throw new ConflictException($"Product with id '{product.Id}' is inactive.");
+                    }
+
+                    if (product.Inventory is null)
+                    {
+                        throw new ConflictException($"Product with id '{product.Id}' has no inventory.");
+                    }
+
+                    // Check if there is sufficient stock (Available = Quantity - ReservedQuantity)
+                    var availableQuantity = product.Inventory.Quantity - product.Inventory.ReservedQuantity;
+
+                    // If there is not enough available stock, throw a ConflictException
+                    if (availableQuantity < requiredQuantity)
+                    {
+                        throw new ConflictException(
+                            $"Insufficient stock for product '{product.Id}'. " +
+                            $"Available: {availableQuantity}, " +
+                            $"Required: {requiredQuantity}.");
+                    }
+
+                    // Reserve the stock
+                    product.Inventory.ReservedQuantity += requiredQuantity;
+
+                    // Generate new concurrency version to trigger Optimistic Concurrency check
+                    product.Inventory.Version = Guid.NewGuid();
+
+                    var orderItem = new SalesOrderItem
+                    {
+                        Id = Guid.NewGuid(),
+                        SalesOrderId = order.Id,
+                        ProductId = product.Id,
+                        Quantity = requiredQuantity,
+                        UnitPrice = product.SellingPrice, // Save selling price at the time when the order is created
+                        TotalPrice = product.SellingPrice * requiredQuantity
+                    };
+
+                    order.Items.Add(orderItem);
+                    order.TotalAmount += orderItem.TotalPrice;
+                }
+
+                _context.SalesOrders.Add(order);
+
+                await _context.SaveChangesAsync();
+
+                await transaction.CommitAsync();
+
+                return MapToResponse(order);
             }
-
-            // Calculate total amount
-            order.TotalAmount = order.Items
-                .Sum(x => x.TotalPrice);
-
-            _context.SalesOrders.Add(order);
-
-            await _context.SaveChangesAsync();
-
-            return MapToResponse(order);
+            catch (DbUpdateConcurrencyException)
+            {
+                await transaction.RollbackAsync();
+                throw new ConflictException("The inventory was updated by another process.");
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
 
         //// Get all sales orders
@@ -370,6 +384,7 @@ namespace DotNetChallenge.Services.SalesOrders
                 OrderDate = salesOrder.OrderDate,
                 Status = salesOrder.Status,
                 TotalAmount = salesOrder.TotalAmount,
+                PaymentStatus = salesOrder.PaymentStatus,
                 CreatedAt = salesOrder.CreatedAt,
                 UpdatedAt = salesOrder.UpdatedAt,
 

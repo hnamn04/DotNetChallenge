@@ -12,5 +12,6 @@ namespace DotNetChallenge.Models.Entities
         public decimal TotalAmount { get; set; }
         public ICollection<SalesOrderItem> Items { get; set; } = new List<SalesOrderItem>();
         public ICollection<Payment> Payments { get; set; } = new List<Payment>();
+        public PaymentStatus PaymentStatus { get; set; } = PaymentStatus.Unpaid;
     }
 }
