@@ -72,7 +72,7 @@ namespace DotNetChallenge.Services.Inventories
 
                 return MapToResponse(inventory);
             }
-            catch (DbUpdateException ex)
+            catch (DbUpdateException)
             {
                 await transaction.RollbackAsync();
 

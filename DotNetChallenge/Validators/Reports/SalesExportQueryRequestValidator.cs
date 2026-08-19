@@ -9,6 +9,7 @@ namespace DotNetChallenge.Validators.Reports
         {
             RuleFor(x => x.ToDate)
                 .GreaterThanOrEqualTo(x => x.FromDate)
+                .When(x => x.FromDate.HasValue && x.ToDate.HasValue)
                 .WithMessage("ToDate cannot be earlier than FromDate.");
 
             RuleFor(x => x)
@@ -18,7 +19,7 @@ namespace DotNetChallenge.Validators.Reports
 
         private bool BeWithin31Days(SalesExportQueryRequest request)
         {
-            var totalDays = (request.ToDate - request.FromDate).TotalDays;
+            var totalDays = (request.ToDate.Value - request.FromDate.Value).TotalDays;
             return totalDays <= 31;
         }
     }

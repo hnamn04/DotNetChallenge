@@ -41,9 +41,9 @@ namespace DotNetChallenge.Controllers
 
         // GET: api/reports/sales/export
         [HttpGet("sales/export")]
-        public async Task<IActionResult> ExportSales() 
+        public async Task<IActionResult> ExportSales([FromQuery] SalesExportQueryRequest request) 
         { 
-            var file = await _reportService.ExportSalesAsync(); 
+            var file = await _reportService.ExportSalesAsync(request); 
             
             return File(file, "text/csv", "sales-report.csv"); 
         }

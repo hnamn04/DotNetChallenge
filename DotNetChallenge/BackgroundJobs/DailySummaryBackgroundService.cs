@@ -1,4 +1,6 @@
-﻿using DotNetChallenge.Services.Jobs;
+﻿using DotNetChallenge.Configuration;
+using DotNetChallenge.Services.Jobs;
+using Microsoft.Extensions.Options;
 
 namespace DotNetChallenge.BackgroundJobs
 {
@@ -6,16 +8,16 @@ namespace DotNetChallenge.BackgroundJobs
     {
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly ILogger<DailySummaryBackgroundService> _logger;
-        private readonly IConfiguration _configuration; // Bổ sung IConfiguration
+        private readonly DailySummaryJobSettings _jobSettings;
 
         public DailySummaryBackgroundService(
             IServiceScopeFactory scopeFactory, 
             ILogger<DailySummaryBackgroundService> logger,
-            IConfiguration configuration)
+            IOptions<DailySummaryJobSettings> options)
         {
             _scopeFactory = scopeFactory;
             _logger = logger;
-            _configuration = configuration;
+            _jobSettings = options.Value;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -25,9 +27,9 @@ namespace DotNetChallenge.BackgroundJobs
                 try
                 {
                     // Get configuration for the daily summary job
-                    var timeZoneId = _configuration["BackgroundJobs:DailySummaryConfig:TimeZoneId"] ?? "UTC";
-                    var runHour = int.Parse(_configuration["BackgroundJobs:DailySummaryConfig:RunAtHour"] ?? "0");
-                    var runMinute = int.Parse(_configuration["BackgroundJobs:DailySummaryConfig:RunAtMinute"] ?? "0");
+                    var timeZoneId = _jobSettings.TimeZoneId ?? "UTC";
+                    var runHour = _jobSettings.RunAtHour;
+                    var runMinute = _jobSettings.RunAtMinute;
 
                     // Get the current time in the specified time zone
                     var timeZone = TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
