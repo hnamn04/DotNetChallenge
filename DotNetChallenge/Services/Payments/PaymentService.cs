@@ -112,6 +112,7 @@ namespace DotNetChallenge.Services.Payments
             // Get payments for the sales order
             var payments = await _context.Payments
                 .AsNoTracking()
+                .Include(x => x.SalesOrder)
                 .Where(x => x.SalesOrderId == salesOrderId)
                 .OrderByDescending(x => x.CreatedAt)
                 .ToListAsync();
