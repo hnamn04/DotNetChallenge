@@ -1,6 +1,8 @@
-﻿using DotNetChallenge.DTOs.Roles;
+﻿using DotNetChallenge.Common.Authorization;
+using DotNetChallenge.DTOs.Roles;
 using DotNetChallenge.Models.Common;
 using DotNetChallenge.Services.Roles;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -19,6 +21,7 @@ namespace DotNetChallenge.Controllers
 
         // POST: api/users/{id}/roles
         [HttpPost("{id}/roles")]
+        [Authorize(Policy = PolicyConstants.AdminOnly)]
         public async Task<ActionResult<ApiResponse<object>>> AssignRole(Guid id, AssignRoleRequest request)
         {
             await _roleService.AssignRoleAsync(id, request);
