@@ -252,6 +252,7 @@ namespace DotNetChallenge.Services.SalesOrders
                         .First(x => x.ProductId == productId);
 
                     inventory.Quantity -= requiredQuantity;
+                    inventory.ReservedQuantity -= requiredQuantity;
 
                     // Generate new concurrency version
                     inventory.Version = Guid.NewGuid();
@@ -297,30 +298,88 @@ namespace DotNetChallenge.Services.SalesOrders
         // Cancel a sales order
         public async Task<SalesOrderResponse> CancelAsync(Guid id)
         {
-            // Get the sales order with the specified ID, including its items
-            var order = await _context.SalesOrders
-                .Include(x => x.Items)
-                .FirstOrDefaultAsync(x => x.Id == id);
+            // Start a database transaction to ensure atomicity
+            await using var transaction = await _context.Database.BeginTransactionAsync();
 
-            // If the order is not found, throw a NotFoundException
-            if (order is null)
+            try
             {
-                throw new NotFoundException($"Sales order with id '{id}' was not found.");
-            }
+                // Get the sales order with the specified ID, including its items
+                var order = await _context.SalesOrders
+                    .Include(x => x.Items)
+                    .FirstOrDefaultAsync(x => x.Id == id);
 
-            // Check if the order is in Draft status; if not, throw a ConflictException
-            if (order.Status != SalesOrderStatus.Draft)
+                // If the order is not found, throw a NotFoundException
+                if (order is null)
+                {
+                    throw new NotFoundException($"Sales order with id '{id}' was not found.");
+                }
+
+                // Check if the order is in Draft status; if not, throw a ConflictException
+                if (order.Status != SalesOrderStatus.Draft)
+                {
+                    throw new ConflictException("Sales order has already been processed.");
+                }
+
+                // Group items by ProductId to calculate total quantities for each product
+                var productQuantities = order.Items
+                .GroupBy(x => x.ProductId)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.Sum(x => x.Quantity));
+
+                var productIds = productQuantities.Keys.ToList();
+
+                // Load inventories for the products in the order
+                var inventories = await _context.Inventories
+                    .Where(x => productIds.Contains(x.ProductId))
+                    .ToListAsync();
+
+                // Release reserved quantities for each product in the order
+                foreach (var productQuantity in productQuantities)
+                {
+                    var productId = productQuantity.Key;
+                    var reservedQuantityToRelease = productQuantity.Value;
+
+                    var inventory = inventories.FirstOrDefault(x => x.ProductId == productId);
+
+                    if (inventory != null)
+                    {
+                        // Release the reserved quantity
+                        inventory.ReservedQuantity -= reservedQuantityToRelease;
+
+                        // Ensure that ReservedQuantity does not go below zero
+                        if (inventory.ReservedQuantity < 0)
+                        {
+                            inventory.ReservedQuantity = 0;
+                        }
+
+                        // Generate new concurrency version
+                        inventory.Version = Guid.NewGuid();
+                    }
+                }
+
+                // Update order status to Cancelled and set the updated timestamp
+                order.Status = SalesOrderStatus.Cancelled;
+                order.UpdatedAt = DateTime.UtcNow;
+
+                try
+                {
+                    await _context.SaveChangesAsync();
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    throw new ConflictException("Inventory was changed by another request.");
+                }
+
+                await transaction.CommitAsync();
+
+                return MapToResponse(order);
+            }
+            catch
             {
-                throw new ConflictException("Sales order has already been processed.");
+                await transaction.RollbackAsync();
+                throw;
             }
-
-            // Update order status to Cancelled and set the updated timestamp
-            order.Status = SalesOrderStatus.Cancelled;
-            order.UpdatedAt = DateTime.UtcNow;
-
-            await _context.SaveChangesAsync();
-
-            return MapToResponse(order);
         }
 
         // Get paginated sales orders based on query parameters
