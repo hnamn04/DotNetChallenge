@@ -6,6 +6,6 @@ namespace DotNetChallenge.Services.Reports
     {
         Task<RevenueReportResponse> GetRevenueAsync(RevenueReportRequest request);
         Task<List<LowStockResponse>> GetLowStockAsync(LowStockRequest request);
-        Task<byte[]> ExportSalesAsync();
+        Task<byte[]> ExportSalesAsync(SalesExportQueryRequest request);
     }
 }
