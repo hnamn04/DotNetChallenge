@@ -1,4 +1,5 @@
-﻿using DotNetChallenge.DTOs.Jobs;
+﻿using DotNetChallenge.Common.Authorization;
+using DotNetChallenge.DTOs.Jobs;
 using DotNetChallenge.Models.Common;
 using DotNetChallenge.Services.Jobs;
 using Microsoft.AspNetCore.Authorization;
@@ -20,7 +21,7 @@ namespace DotNetChallenge.Controllers
 
         // POST: api/jobs/daily-summary/run
         [HttpPost("daily-summary/run")]
-        [Authorize(Roles = "Admin")] 
+        [Authorize(Policy = PolicyConstants.ReportAccess)]
         public async Task<ActionResult<ApiResponse<DailySummaryResponse>>> RunDailySummary() 
         { 
             var date = DateOnly.FromDateTime(DateTime.Today.AddDays(-1)); 

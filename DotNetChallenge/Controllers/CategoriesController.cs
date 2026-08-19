@@ -1,6 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using DotNetChallenge.Common.Authorization;
 using DotNetChallenge.DTOs.Categories;
 using DotNetChallenge.Services.Categories;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace DotNetChallenge.Controllers
 {
@@ -17,6 +19,7 @@ namespace DotNetChallenge.Controllers
 
         // POST: /api/categories
         [HttpPost]
+        [Authorize(Policy = PolicyConstants.AdminOnly)]
         public async Task<ActionResult<CategoryResponse>> Create(CreateCategoryRequest request)
         {
             var response = await _categoryService.CreateAsync(request);
@@ -35,6 +38,7 @@ namespace DotNetChallenge.Controllers
 
         // PUT: /api/categories/{id}
         [HttpPut("{id:guid}")]
+        [Authorize(Policy = PolicyConstants.AdminOnly)]
         public async Task<ActionResult<CategoryResponse>> Update(Guid id, UpdateCategoryRequest request)
         {
             var response = await _categoryService.UpdateAsync(id, request);
@@ -44,6 +48,7 @@ namespace DotNetChallenge.Controllers
 
         // DELETE: /api/categories/{id}
         [HttpDelete("{id:guid}")]
+        [Authorize(Policy = PolicyConstants.AdminOnly)]
         public async Task<IActionResult> Delete(Guid id)
         {
             await _categoryService.DeleteAsync(id);
