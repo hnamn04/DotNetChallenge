@@ -73,11 +73,28 @@ namespace DotNetChallenge.Services.Reports
         }
 
         // Export sales orders to CSV
-        public async Task<byte[]> ExportSalesAsync()
+        public async Task<byte[]> ExportSalesAsync(SalesExportQueryRequest request)
         {
+            var query = _context.SalesOrders
+                .AsNoTracking()
+                .AsQueryable();
+
+            // If user has provided FromDate, filter the orders to include only those after or on FromDate
+            if (request.FromDate.HasValue)
+            {
+                var fromDate = request.FromDate.Value;
+                query = query.Where(x => x.OrderDate >= fromDate);
+            }
+
+            // If user has provided ToDate, filter the orders to include only those before the next day of ToDate
+            if (request.ToDate.HasValue)
+            {
+                var toDate = request.ToDate.Value.AddDays(1);
+                query = query.Where(x => x.OrderDate < toDate);
+            }
+
             // Get sales orders
             var orders = await _context.SalesOrders
-                .AsNoTracking()
                 .OrderBy(x => x.OrderDate)
                 .ToListAsync();
 
